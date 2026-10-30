@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:brand-ai-readiness-audit:schema:site-profile.schema.json",
+  "title": "Detected site profile",
+  "description": "The orchestrator's classification of the site, written after the crawl and read by every specialist. Scored from on-page evidence only - structured-data types, path classes, page text patterns and interaction controls. The domain name is never an input. When the top two profiles score within the ambiguity margin the result is 'ambiguous' and only type-agnostic checks run, because a confident wrong profile produces a page of confident wrong findings.",
+  "type": "object",
+  "required": ["detected_type", "confidence"],
+  "additionalProperties": true,
+  "properties": {
+    "detected_type": {
+      "enum": ["ecommerce", "publisher", "local_business", "saas_software",
+               "docs_knowledge", "marketing_brochure", "marketplace_directory",
+               "ambiguous"]
+    },
+    "confidence": {"enum": ["high", "medium", "low"]},
+    "signals": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "The observations that produced the classification, so a reader can check the reasoning rather than trust the label."
+    },
+    "scores": {"type": "object", "additionalProperties": {"type": "number"}},
+    "runner_up": {"type": "string"},
+    "margin": {"type": "number", "minimum": 0},
+    "expected_schema_types": {"type": "array", "items": {"type": "string"}},
+    "primary_fact_classes": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Fact classes that count as primary for this profile, which feeds severity. A missing price is critical on a shop and not a finding on a documentation site."
+    },
+    "checks_not_applicable": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Checks scoped out for this profile. Question-shaped headings are not a defect on a product detail page."
+    },
+    "method": {"type": "string"},
+    "template_clusters": {"type": "array", "items": {"type": "object"}},
+    "pages": {"type": "array", "items": {"type": "object"}}
+  }
+}

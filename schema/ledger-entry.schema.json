@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:brand-ai-readiness-audit:schema:ledger-entry.schema.json",
+  "title": "Evidence ledger entry",
+  "description": "One fetch, recorded immutably. entry_id is the SHA-256 of the canonical URL and is what evidence refs carry as url_hash; content_hash is the SHA-256 of the raw body. Both are hashes rather than URL-derived paths, so a crafted URL can never traverse the filesystem (threat T8). A refusal is a first-class entry with a non-ok outcome and a stated reason, because a blocked path is evidence about the site.",
+  "type": "object",
+  "required": ["url", "entry_id", "outcome"],
+  "additionalProperties": true,
+  "properties": {
+    "url": {"type": "string", "description": "Canonical dedupe key that was requested."},
+    "entry_id": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "final_url": {"type": "string", "description": "After redirects; equals url when there were none."},
+    "method": {"enum": ["GET", "HEAD"], "description": "The method allowlist, visible in the data."},
+    "status": {"type": ["integer", "null"], "minimum": 100, "maximum": 599},
+    "outcome": {
+      "enum": ["ok", "http_error", "blocked_robots", "blocked_policy", "timeout",
+               "network_error", "too_large", "circuit_open", "budget_exhausted"]
+    },
+    "reason": {"type": "string"},
+    "headers": {"type": "object", "additionalProperties": {"type": "string"},
+                "description": "Response headers with lowercased names."},
+    "content_hash": {"type": "string"},
+    "content_length": {"type": "integer", "minimum": 0},
+    "declared_length": {"type": ["integer", "null"]},
+    "truncated": {"type": "boolean", "description": "True when the size cap was hit. The render check refuses to judge a page whose body never fully arrived (guard G7)."},
+    "encoding": {"type": ["string", "null"]},
+    "declared_encoding": {"type": ["string", "null"]},
+    "ttfb_ms": {"type": ["number", "null"]},
+    "elapsed_ms": {"type": ["number", "null"]},
+    "redirects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "from": {"type": "string"},
+          "to": {"type": "string"},
+          "status": {"type": "integer"},
+          "hop": {"type": "integer"}
+        }
+      },
+      "description": "Every hop, recorded because each one was individually re-validated against the SSRF policy before being followed."
+    },
+    "resolved_ip": {"type": "string", "description": "The address that passed validation and was pinned for the connection."},
+    "user_agent": {"type": "string"},
+    "purpose": {"enum": ["page", "robots", "sitemap", "probe", "asset", "offsite", "feed"]},
+    "rendered_hash": {"type": "string"},
+    "render_mode": {"type": "string"},
+    "depth": {"type": ["integer", "null"]},
+    "referrer": {"type": "string"},
+    "probe_agent": {"type": "string", "description": "For user-agent divergence probes: the crawler token whose treatment was being diagnosed."},
+    "notes": {"type": "array", "items": {"type": "string"}},
+    "schema_version": {"type": "integer"}
+  }
+}

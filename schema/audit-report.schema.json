@@ -1,0 +1,345 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:brand-ai-readiness-audit:schema:audit-report.schema.json",
+  "title": "Brand AI-Readiness Audit Report",
+  "description": "The entrypoint skill's final output. A strict superset of the contest brief's required shape: every field the brief requires is mandatory here and always present, including zero counts. Additional top-level arrays keep defects, advice and low-confidence notes structurally separate so counts stay honest.",
+  "type": "object",
+  "required": ["site", "audited_at", "summary", "findings"],
+  "additionalProperties": true,
+  "properties": {
+    "site": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The audited site, as a hostname."
+    },
+    "audited_at": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+      "description": "ISO-8601 UTC with a trailing Z. The only non-deterministic field in the report: identical input produces byte-identical output apart from this value."
+    },
+    "summary": {
+      "type": "object",
+      "description": "Counts by severity. critical, high and medium are required by the brief and are always present even at zero; low and info are additive. Counts cover findings[] only, never masked_findings[] or observations[].",
+      "required": ["total_findings", "critical", "high", "medium"],
+      "additionalProperties": true,
+      "properties": {
+        "total_findings": {"type": "integer", "minimum": 0},
+        "critical": {"type": "integer", "minimum": 0},
+        "high": {"type": "integer", "minimum": 0},
+        "medium": {"type": "integer", "minimum": 0},
+        "low": {"type": "integer", "minimum": 0},
+        "info": {"type": "integer", "minimum": 0},
+        "masked": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Findings moved to masked_findings[] because a root cause fully explains them. Retained, not discarded."
+        },
+        "observations": {"type": "integer", "minimum": 0},
+        "proactive_recommendations": {"type": "integer", "minimum": 0}
+      }
+    },
+    "findings": {
+      "type": "array",
+      "description": "Evidence-backed defects, sorted deterministically by gate, then severity, then check id, then scope.",
+      "items": {"$ref": "#/$defs/finding"}
+    },
+    "masked_findings": {
+      "type": "array",
+      "description": "Findings whose cause is entirely explained by another finding. Retained so nothing is lost and the reader sees dependency order instead of a flat pile. Excluded from summary counts.",
+      "items": {"$ref": "#/$defs/finding"}
+    },
+    "observations": {
+      "type": "array",
+      "description": "Low-confidence or informational items. Deliberately not findings, and never counted as problems (rule R7).",
+      "items": {"$ref": "#/$defs/observation"}
+    },
+    "proactive_recommendations": {
+      "type": "array",
+      "description": "Improvements that would strengthen discoverability or engagement where no defect was detected. Structurally separate from findings so advice can never inflate the defect count.",
+      "items": {"$ref": "#/$defs/recommendation"}
+    },
+    "action_plan": {
+      "type": "object",
+      "required": ["first_five", "rationale"],
+      "additionalProperties": true,
+      "properties": {
+        "first_five": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {"type": "string", "pattern": "^[FR]-\\d{3,}$"},
+          "description": "Ordered by impact x confidence / effort, respecting gate dependencies: no item appears before the finding that masks it."
+        },
+        "rationale": {"type": "string"},
+        "items": {"type": "array", "items": {"type": "object"}}
+      }
+    },
+    "gate_scorecard": {
+      "type": "object",
+      "description": "Per-gate status, so a reader can see which stage of the discoverability chain is failing.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["status", "findings"],
+        "properties": {
+          "status": {"enum": ["pass", "partial", "fail", "not_assessed"]},
+          "findings": {"type": "integer", "minimum": 0},
+          "masked": {"type": "integer", "minimum": 0},
+          "note": {"type": "string"}
+        }
+      }
+    },
+    "site_profile": {
+      "type": "object",
+      "required": ["detected_type", "confidence"],
+      "additionalProperties": true,
+      "properties": {
+        "detected_type": {
+          "enum": ["ecommerce", "publisher", "local_business", "saas_software",
+                   "docs_knowledge", "marketing_brochure", "marketplace_directory",
+                   "ambiguous"],
+          "description": "Classified from on-page evidence only. Never inferred from the domain name. 'ambiguous' means the audit declined to guess and ran only type-agnostic checks."
+        },
+        "confidence": {"enum": ["high", "medium", "low"]},
+        "signals": {"type": "array", "items": {"type": "string"}},
+        "scores": {"type": "object"},
+        "runner_up": {"type": "string"},
+        "margin": {"type": "number"},
+        "expected_schema_types": {"type": "array", "items": {"type": "string"}},
+        "primary_fact_classes": {"type": "array", "items": {"type": "string"}},
+        "checks_not_applicable": {"type": "array", "items": {"type": "string"}},
+        "method": {"type": "string"}
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "description": "What was and was not examined. A partial-but-honest audit beats a complete-looking one.",
+      "additionalProperties": true,
+      "properties": {
+        "pages_attempted": {"type": "integer", "minimum": 0},
+        "pages_fetched": {"type": "integer", "minimum": 0},
+        "pages_rendered": {"type": "integer", "minimum": 0},
+        "render_mode": {"enum": ["static", "playwright"]},
+        "render_note": {"type": "string"},
+        "template_clusters": {"type": "integer", "minimum": 0},
+        "robots_respected": {"const": true,
+          "description": "Always true. The audit never fetches a path its own user-agent is disallowed from."},
+        "paths_skipped": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "reason"],
+            "properties": {
+              "path": {"type": "string"},
+              "reason": {"type": "string"}
+            }
+          }
+        },
+        "checks_skipped": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["check_id", "reason"],
+            "properties": {
+              "check_id": {"type": "string"},
+              "reason": {"type": "string"},
+              "remedy": {"type": "string"}
+            }
+          }
+        },
+        "skills_failed": {"type": "array", "items": {"type": "object"}},
+        "budget": {"type": "object"},
+        "offsite_corroboration": {"enum": ["enabled", "disabled", "budget_exhausted",
+                                           "no_identifiers_declared"]}
+      }
+    },
+    "methodology": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "marketplace_version": {"type": "string"},
+        "gate_model": {"type": "string"},
+        "severity_model": {"type": "object"},
+        "skills_run": {"type": "array", "items": {"type": "string"}},
+        "determinism": {"type": "string"},
+        "safety": {"type": "object"},
+        "limitations": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "executive_summary": {
+      "type": "string",
+      "description": "Generated from the structured findings only. Every number in it is regenerated from the findings array, so a mis-stated count fails verification."
+    }
+  },
+
+  "$defs": {
+    "severity": {"enum": ["critical", "high", "medium", "low"]},
+    "confidence": {"enum": ["high", "medium", "low"]},
+
+    "evidence_ref": {
+      "type": "object",
+      "description": "A typed pointer into the evidence ledger. verify_report.py re-resolves every ref against the stored bytes and refuses to emit a report if any cannot be reproduced.",
+      "required": ["kind", "url_hash"],
+      "additionalProperties": true,
+      "properties": {
+        "kind": {"enum": ["dom", "header", "file_line", "jsonpath", "metric"]},
+        "url_hash": {"type": "string", "minLength": 8},
+        "selector": {"type": "string"},
+        "name": {"type": "string"},
+        "value": {},
+        "path": {"type": "string"},
+        "line": {"type": "integer", "minimum": 1},
+        "text": {"type": "string"},
+        "excerpt": {"type": "string"},
+        "threshold": {},
+        "tolerance": {"type": "number"}
+      },
+      "allOf": [
+        {"if": {"properties": {"kind": {"const": "dom"}}, "required": ["kind"]},
+         "then": {"required": ["selector"]}},
+        {"if": {"properties": {"kind": {"const": "header"}}, "required": ["kind"]},
+         "then": {"required": ["name"]}},
+        {"if": {"properties": {"kind": {"const": "file_line"}}, "required": ["kind"]},
+         "then": {"required": ["line"]}},
+        {"if": {"properties": {"kind": {"const": "jsonpath"}}, "required": ["kind"]},
+         "then": {"required": ["path"]}},
+        {"if": {"properties": {"kind": {"const": "metric"}}, "required": ["kind"]},
+         "then": {"required": ["name", "value"]}}
+      ]
+    },
+
+    "scope": {
+      "type": "object",
+      "required": ["level", "pages_affected", "pages_sampled"],
+      "additionalProperties": true,
+      "properties": {
+        "level": {"enum": ["site", "template", "section", "page"]},
+        "template_id": {"type": "string"},
+        "pages_affected": {"type": "integer", "minimum": 0},
+        "pages_sampled": {"type": "integer", "minimum": 0},
+        "example_urls": {"type": "array", "maxItems": 3, "items": {"type": "string"}},
+        "path_class": {"type": "string"}
+      }
+    },
+
+    "finding": {
+      "type": "object",
+      "description": "One evidence-backed problem. The first five properties are the brief's required fields and are always present.",
+      "required": ["id", "title", "severity", "evidence", "suggested_action",
+                   "check_id", "gate", "confidence", "mechanism", "evidence_refs"],
+      "additionalProperties": true,
+      "properties": {
+        "id": {"type": "string", "pattern": "^F-\\d{3,}$"},
+        "title": {"type": "string", "minLength": 8},
+        "severity": {"$ref": "#/$defs/severity"},
+        "evidence": {
+          "type": "string",
+          "minLength": 20,
+          "description": "Script-generated statement of what was observed, quantified where it can be (k/n). Describes the observation, never an inference dressed as an observation."
+        },
+        "suggested_action": {
+          "type": "object",
+          "required": ["summary", "priority"],
+          "additionalProperties": false,
+          "properties": {
+            "summary": {"type": "string", "minLength": 8},
+            "priority": {"$ref": "#/$defs/severity"}
+          }
+        },
+        "check_id": {
+          "type": "string",
+          "pattern": "^(G0|G1|G2|G3|GE)\\.[A-Z_]+\\.[A-Z0-9_]+$",
+          "description": "Stable identity from the closed registry in lib/auditkit/checks.py. The F-### id is presentation only."
+        },
+        "gate": {"enum": ["G0", "G1", "G2", "G3", "GE"]},
+        "category": {"type": "string"},
+        "confidence": {"$ref": "#/$defs/confidence"},
+        "detected_by": {"type": "string"},
+        "corroborated_by": {"type": "array", "items": {"type": "string"}},
+        "mechanism": {
+          "type": "string",
+          "minLength": 20,
+          "description": "Why this hurts discoverability or engagement, in terms of how crawlers and assistants actually work."
+        },
+        "scope": {"$ref": "#/$defs/scope"},
+        "evidence_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/evidence_ref"}
+        },
+        "suggested_action_detail": {
+          "type": "object",
+          "required": ["steps", "effort", "verification"],
+          "additionalProperties": true,
+          "properties": {
+            "steps": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+            "effort": {"enum": ["trivial", "low", "medium", "high"]},
+            "owner_role": {"type": "string"},
+            "verification": {
+              "type": "string",
+              "minLength": 8,
+              "description": "How to confirm the fix worked. Required, because it is what turns a recommendation into something a non-expert can close out."
+            },
+            "expected_effect": {"type": "string"}
+          }
+        },
+        "severity_derivation": {
+          "type": "string",
+          "description": "The computed derivation, so any severity in the report can be recomputed by hand."
+        },
+        "masks": {"type": "array", "items": {"type": "string", "pattern": "^F-\\d{3,}$"}},
+        "masked_by": {"type": "string", "pattern": "^F-\\d{3,}$"},
+        "masked_reason": {"type": "string"},
+        "evidence_degraded": {"type": "boolean"},
+        "references": {"type": "array", "items": {"type": "string"}},
+        "notes": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+
+    "observation": {
+      "type": "object",
+      "required": ["check_id", "title", "detail", "confidence"],
+      "additionalProperties": true,
+      "properties": {
+        "check_id": {"type": "string"},
+        "gate": {"enum": ["G0", "G1", "G2", "G3", "GE"]},
+        "title": {"type": "string"},
+        "detail": {"type": "string"},
+        "confidence": {"$ref": "#/$defs/confidence"},
+        "detected_by": {"type": "string"},
+        "evidence_refs": {"type": "array", "items": {"$ref": "#/$defs/evidence_ref"}}
+      }
+    },
+
+    "recommendation": {
+      "type": "object",
+      "description": "Proactive advice where no defect was found. Carries rationale and mechanism but no evidence of defect, because there is no defect. is_defect is required and always false.",
+      "required": ["id", "title", "rationale", "mechanism", "priority", "effort",
+                   "implementation", "verification", "is_defect"],
+      "additionalProperties": true,
+      "properties": {
+        "id": {"type": "string", "pattern": "^R-\\d{3,}$"},
+        "title": {"type": "string", "minLength": 8},
+        "category": {"type": "string"},
+        "gate": {"enum": ["G0", "G1", "G2", "G3", "GE"]},
+        "generator": {
+          "enum": ["near_miss", "posture_gap", "profile_playbook", "leverage_synthesis"],
+          "description": "Which of the four generators produced this, so a reader can see whether it is grounded in a measurement of this site or is a type-conditional playbook entry."
+        },
+        "rationale": {"type": "string", "minLength": 20},
+        "mechanism": {"type": "string", "minLength": 20},
+        "expected_effect": {"type": "string"},
+        "priority": {"$ref": "#/$defs/severity"},
+        "effort": {"enum": ["trivial", "low", "medium", "high"]},
+        "owner_role": {"type": "string"},
+        "implementation": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "verification": {"type": "string", "minLength": 8},
+        "is_defect": {"const": false},
+        "measurement": {"type": "object"},
+        "evidence_refs": {"type": "array", "items": {"$ref": "#/$defs/evidence_ref"}},
+        "calibration": {
+          "type": "string",
+          "description": "Present where a recommendation rests on an emerging or unevenly-adopted convention, stating that honestly rather than overselling it."
+        }
+      }
+    }
+  }
+}

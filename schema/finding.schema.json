@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:brand-ai-readiness-audit:schema:finding.schema.json",
+  "title": "Inter-skill findings file",
+  "description": "The contract between a specialist skill and the entrypoint's merge step. A specialist writes exactly this shape; the merge step validates every file and rebuilds every finding through the Finding constructor, dropping malformed entries with a logged reason rather than trusting them. Findings here carry no F-### id and a provisional severity: the merge step owns both, because ids must be globally ordered and severity must be recomputed consistently across skills after masking and corroboration. Beyond findings the file carries observations (never counted), skipped checks (rule R6: absence of evidence is not evidence), near misses (measurements below threshold, which feed the proactive recommendation engine) and posture facts (present-but-shallow signals).",
+  "type": "object",
+  "required": ["skill", "findings", "observations", "checks_skipped", "near_misses", "posture", "metrics"],
+  "additionalProperties": false,
+  "properties": {
+    "skill": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "The skill id that produced this file. Must match a skills[].id in marketplace.json, and must own every check_id it reports."
+    },
+    "findings": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/specialist_finding"}
+    },
+    "observations": {
+      "type": "array",
+      "items": {"$ref": "audit-report.schema.json#/$defs/observation"}
+    },
+    "checks_skipped": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["check_id", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "check_id": {"type": "string"},
+          "reason": {"type": "string", "minLength": 5},
+          "remedy": {"type": "string"}
+        }
+      }
+    },
+    "near_misses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["check_id", "metric", "value", "threshold"],
+        "additionalProperties": false,
+        "properties": {
+          "check_id": {"type": "string"},
+          "metric": {"type": "string"},
+          "value": {"type": "number"},
+          "threshold": {"type": "number"},
+          "proximity": {"type": "number"},
+          "scope_key": {"type": "string"},
+          "detail": {"type": "string"},
+          "examples": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "posture": {"type": "object"},
+    "metrics": {"type": "object"}
+  },
+  "$defs": {
+    "specialist_finding": {
+      "type": "object",
+      "description": "A finding before merge. Same content contract as the report's finding, without the globally assigned id.",
+      "required": ["check_id", "title", "severity", "evidence", "suggested_action", "gate",
+                   "confidence", "mechanism", "scope", "evidence_refs",
+                   "suggested_action_detail", "detected_by"],
+      "additionalProperties": true,
+      "properties": {
+        "id": {"type": "string", "maxLength": 0},
+        "check_id": {"type": "string", "pattern": "^(G0|G1|G2|G3|GE)\\.[A-Z_]+\\.[A-Z0-9_]+$"},
+        "title": {"type": "string", "minLength": 8},
+        "severity": {"enum": ["critical", "high", "medium", "low"]},
+        "evidence": {"type": "string", "minLength": 20},
+        "mechanism": {"type": "string", "minLength": 20},
+        "gate": {"enum": ["G0", "G1", "G2", "G3", "GE"]},
+        "confidence": {"enum": ["high", "medium"]},
+        "detected_by": {"type": "string"},
+        "fact_class": {"enum": ["primary", "secondary", "enrichment"]},
+        "signal_count": {"type": "integer", "minimum": 1},
+        "scope": {"$ref": "audit-report.schema.json#/$defs/scope"},
+        "evidence_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "audit-report.schema.json#/$defs/evidence_ref"}
+        },
+        "suggested_action": {
+          "type": "object",
+          "required": ["summary", "priority"],
+          "properties": {
+            "summary": {"type": "string", "minLength": 8},
+            "priority": {"enum": ["critical", "high", "medium", "low"]}
+          }
+        },
+        "suggested_action_detail": {
+          "type": "object",
+          "required": ["steps", "effort", "verification"],
+          "properties": {
+            "steps": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+            "effort": {"enum": ["trivial", "low", "medium", "high"]},
+            "verification": {"type": "string", "minLength": 8}
+          }
+        }
+      }
+    }
+  }
+}
