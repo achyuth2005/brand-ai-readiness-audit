@@ -1,0 +1,501 @@
+{
+  "_about": {
+    "purpose": "Every tunable default in the marketplace, in one file, each with a stated rationale. No detector carries a bare numeric literal in a decision branch; tests/test_config.py enforces that.",
+    "why_this_exists": "A threshold a reader cannot interrogate is indistinguishable from a guess. Externalising them with reasons lets a reviewer disagree with a specific number instead of with the whole check, and lets an operator recalibrate for a site class without touching code.",
+    "calibration_note": "These are a priori defaults derived from the mechanisms in the brief's appendix and from publicly documented crawler and retrieval behaviour. They are deliberately set where a defect is unambiguous rather than at the edge of detectability, because on unseen sites a false positive costs more than a miss: a noisy report damages detection accuracy, output design and generalization at once.",
+    "units": "chars = characters; ms = milliseconds; s = seconds; ratios are fractions of 1.0"
+  },
+  "budget": {
+    "wall_clock_seconds": {
+      "value": 240,
+      "rationale": "The brief caps an audit at 5 minutes. 240s leaves a full minute of headroom for process start-up and slow DNS on a cold machine."
+    },
+    "analysis_reserve_seconds": {
+      "value": 60,
+      "rationale": "Held back from the wall clock for analysis, merge, recommendations and report rendering. Spending the whole budget fetching and then having no time to write the report is the obvious failure mode."
+    },
+    "max_requests": {
+      "value": 120,
+      "rationale": "Total HTTP requests including robots, sitemaps, probes and asset HEADs. Enough to sample a 30-page site thoroughly; low enough that the audit is never mistaken for a load test."
+    },
+    "max_pages": {
+      "value": 30,
+      "rationale": "Content pages fetched. Above ~30 the marginal page rarely changes a template-level conclusion, because findings are collapsed per template cluster rather than per page."
+    },
+    "max_render_pages": {
+      "value": 5,
+      "rationale": "Browser renders are the most expensive operation in the run (several seconds each). One page per template cluster is what the render check actually needs."
+    },
+    "min_pages_for_coverage": {
+      "value": 3,
+      "rationale": "Below three fetched pages no claim about a page class is defensible (rule R2), so the audit reports a coverage failure instead of guessing."
+    }
+  },
+  "crawl": {
+    "per_host_min_interval_seconds": {
+      "value": 0.5,
+      "rationale": "Two requests per second per host is gentle for any production origin and is raised, never lowered, when robots.txt declares a longer Crawl-delay."
+    },
+    "per_host_concurrency": {
+      "value": 2,
+      "rationale": "Bounded parallelism keeps the crawl inside budget without presenting a burst to a small origin."
+    },
+    "hard_concurrency_cap": {
+      "value": 4,
+      "rationale": "An absolute ceiling that configuration cannot exceed, so a mis-set config cannot turn the audit into a stress test."
+    },
+    "connect_timeout_seconds": {
+      "value": 5,
+      "rationale": "A host that cannot complete a TCP handshake in 5s will not serve 30 pages inside the budget."
+    },
+    "read_timeout_seconds": {
+      "value": 10,
+      "rationale": "Generous enough for a slow server-rendered page, short enough that one stalled response cannot consume the fetch window."
+    },
+    "max_response_bytes": {
+      "value": 5242880,
+      "rationale": "5 MB streamed and then aborted. Larger HTML documents exist but carry no additional diagnostic value, and an unbounded read is a host-side denial-of-service against ourselves."
+    },
+    "max_decompress_ratio": {
+      "value": 50,
+      "rationale": "Guards against a compression bomb: a small response that expands to fill memory. Real HTML rarely exceeds about 20:1."
+    },
+    "max_redirects": {
+      "value": 5,
+      "rationale": "Matches common crawler hop budgets, so what we can reach approximates what a real fetcher can reach."
+    },
+    "breaker_threshold": {
+      "value": 3,
+      "rationale": "Three consecutive 429/503 responses from a host is a clear request to stop. The host is abandoned and partial coverage is reported honestly."
+    },
+    "max_backoff_seconds": {
+      "value": 30,
+      "rationale": "Caps Retry-After compliance so a hostile or misconfigured header cannot stall the whole run."
+    },
+    "max_sitemap_children": {
+      "value": 10,
+      "rationale": "Sitemap indexes can nest to thousands of children. Ten gives a representative URL sample within budget."
+    },
+    "max_sitemap_urls": {
+      "value": 5000,
+      "rationale": "Enough to judge lastmod distribution and URL-class coverage without parsing a 50 MB file."
+    },
+    "ua_probe_urls": {
+      "value": 3,
+      "rationale": "The user-agent divergence probe needs at least two agreeing observations (rule R1) and a third to break a tie. More would multiply requests for no additional certainty."
+    },
+    "asset_head_sample": {
+      "value": 10,
+      "rationale": "Sampled HEAD requests for broken-link and page-weight checks, reported as k/n rather than as an exhaustive audit."
+    },
+    "max_stylesheets": {
+      "value": 5,
+      "rationale": "Linked stylesheets fetched so overlay, scroll-lock, font-display and contrast checks can read declared CSS. Five covers the shared layout sheets of a typical site; beyond that the checks cap their confidence rather than fetching more."
+    },
+    "analyzer_timeout_seconds": {
+      "value": 90,
+      "rationale": "Wall-clock cap per specialist skill. A skill that exceeds it is recorded in coverage.skills_failed and the audit continues, so one slow analyzer cannot consume the budget."
+    }
+  },
+  "false_positive_control": {
+    "min_sample_pages": {
+      "value": 3,
+      "rationale": "Rule R2: a claim about a page class needs at least three pages in that class. Below that the finding is scoped to the individual URL and capped at medium."
+    },
+    "template_majority_share": {
+      "value": 0.5,
+      "rationale": "Rule R3: a defect must appear on the majority of a cluster's sampled pages before it is attributed to the template rather than to a page."
+    },
+    "site_wide_share": {
+      "value": 0.6,
+      "rationale": "At or above 60% of sampled pages a defect is treated as site-wide, which matches how a reader would describe it and drives the scope weight in severity."
+    },
+    "near_miss_margin": {
+      "value": 0.2,
+      "rationale": "A check measuring within 20% of its threshold produced a real measurement worth reporting as proactive advice. Wider would generate advice from noise."
+    },
+    "min_signals_for_inference": {
+      "value": 2,
+      "rationale": "Rule R1: any claim that is inferred rather than directly observed needs two independent signals. Single-signal detectors may only produce observations."
+    },
+    "thin_relative_to_template": {
+      "value": 0.6,
+      "rationale": "A page is 'thin' only relative to its own template: under 60% of the cluster's median main-region words. Absolute word counts do not generalize across site types."
+    }
+  },
+  "render": {
+    "thin_text_chars": {
+      "value": 600,
+      "rationale": "Signal S1. A genuine content page's main region almost always exceeds 600 characters; below that, either the page is a utility surface (excluded by path class) or its text is not in the response."
+    },
+    "mount_node_text_chars": {
+      "value": 200,
+      "rationale": "Signal S2. A framework mount point whose subtree holds under 200 characters has not been server-rendered. Above it, the framework rendered on the server and the check must stay silent (rule R5)."
+    },
+    "text_to_html_ratio": {
+      "value": 0.015,
+      "rationale": "Signal S3. Server-rendered pages carry visible text worth well over 1.5% of their HTML bytes. A lower ratio means the bytes are script and markup rather than content."
+    },
+    "script_count": {
+      "value": 5,
+      "rationale": "Signal S4, corroborating only. Never a defect by itself: plenty of correct pages load five scripts."
+    },
+    "script_bytes": {
+      "value": 204800,
+      "rationale": "Signal S4 alternative. 200 KB of inline and referenced script alongside a thin body indicates the page is assembled rather than served."
+    },
+    "blob_delta_chars": {
+      "value": 400,
+      "rationale": "Tier 2 confirmation. 400 characters of natural-language text present in the hydration payload and absent from the static text is far beyond what encoding noise or a cookie banner can explain, so it confirms client-side rendering at high confidence with no browser."
+    },
+    "blob_span_min_chars": {
+      "value": 40,
+      "rationale": "Shorter strings in a state blob are usually labels, enum values or identifiers rather than content, and counting them would manufacture a delta."
+    },
+    "blob_span_min_words": {
+      "value": 6,
+      "rationale": "Combined with the character floor, this keeps span extraction to prose and excludes slugs, class names and concatenated identifiers."
+    },
+    "render_delta_ratio": {
+      "value": 0.3,
+      "rationale": "Tier 3 direct measurement. Below 30% added tokens the difference is typically chrome, lazy images and consent text rather than primary content."
+    },
+    "render_delta_chars": {
+      "value": 500,
+      "rationale": "Paired with the ratio so that a small page with a large proportional delta still needs an absolute volume of missing text to fire."
+    },
+    "boilerplate_dominance_ratio": {
+      "value": 1.0,
+      "rationale": "Fires when navigation and footer text equals or exceeds main-region text, meaning extraction of this page yields mostly chrome."
+    },
+    "boilerplate_min_main_words": {
+      "value": 30,
+      "rationale": "Below 30 words the main region is effectively empty -- a client-rendered shell or a placeholder -- which the render and thin-content checks describe. Calling that page boilerplate-dominated would report the same absence twice under a misleading cause."
+    },
+    "interaction_hidden_panel_chars": {
+      "value": 400,
+      "rationale": "Content hidden behind tabs or accordions matters once the hidden text exceeds this, which is roughly a substantive paragraph."
+    }
+  },
+  "non_text": {
+    "fact_region_max_words": {
+      "value": 25,
+      "rationale": "A section labelled 'Pricing' or 'Opening hours' carrying fewer than 25 words is not stating its facts as text. Above that, prose is present and the check stays silent."
+    },
+    "content_image_min_dimension": {
+      "value": 200,
+      "rationale": "Images declaring at least 200px on a side are content rather than icons or sprites. Below it, flagging them produces noise from UI furniture."
+    },
+    "alt_missing_share": {
+      "value": 0.3,
+      "rationale": "Fires when over 30% of main-region informative images lack an alt attribute entirely. A single missing alt is a page defect, not a template finding."
+    },
+    "min_images_for_alt_check": {
+      "value": 4,
+      "rationale": "Below four informative images the share statistic is not meaningful and the check reports nothing."
+    }
+  },
+  "structured_data": {
+    "canonical_duplicate_similarity": {
+      "value": 0.7,
+      "rationale": "A page whose canonical target was fetched and shares at least 70% of its main-text vocabulary is a duplicate being consolidated -- an old documentation version, a legacy path alias -- which is what a canonical is for. Calibration found such consolidation reported as pages removing themselves from indexes."
+    },
+    "min_pages_for_absent_check": {
+      "value": 3,
+      "rationale": "Rule R2 applied to markup coverage: 'this page class has no structured data' needs three pages of that class."
+    },
+    "price_match_tolerance": {
+      "value": 0.005,
+      "rationale": "Absolute currency tolerance for markup-versus-text comparison, covering rounding differences without admitting a genuinely different price."
+    },
+    "rating_match_tolerance": {
+      "value": 0.05,
+      "rationale": "Displayed ratings are commonly rounded to one decimal while markup carries more precision."
+    },
+    "date_match_granularity_days": {
+      "value": 1,
+      "rationale": "Markup and visible dates are compared at day granularity, because timezone handling differences between a CMS and a rendered byline routinely produce one-day offsets that are not defects."
+    },
+    "deep_page_depth": {
+      "value": 2,
+      "rationale": "At path depth 2 or more a page has a hierarchy worth expressing as a BreadcrumbList."
+    },
+    "faq_answer_match_share": {
+      "value": 0.5,
+      "rationale": "FAQPage markup is treated as mismatched when fewer than half its answers appear in the visible page, which tolerates minor copy differences while catching markup written for machines only."
+    }
+  },
+  "entity_trust": {
+    "ambiguity_risk_score": {
+      "value": 2,
+      "rationale": "A disambiguation posture of 2 or less out of 6 means a machine has almost nothing to separate this entity from a namesake. It is reported as a risk only together with a collision-prone name (a common word, or a very short name), because rule R1 requires a second signal for an inference; a weak posture alone is reported as weak disambiguation. Calibration found the posture score alone firing on 78% of well-known brands."
+    },
+    "weak_disambiguation_score": {
+      "value": 4,
+      "rationale": "Scores of 3-4 indicate partial posture: some identity signals exist but not enough to resolve confidently."
+    },
+    "authoritative_sameas_required": {
+      "value": 2,
+      "rationale": "Two independent authoritative identifiers is the point at which a machine can cross-check identity. One can be wrong or stale with nothing to contradict it."
+    },
+    "short_name_chars": {
+      "value": 4,
+      "rationale": "Names of four characters or fewer collide heavily across the web and amplify ambiguity risk."
+    },
+    "name_variant_count": {
+      "value": 3,
+      "rationale": "Three or more irreducible name variants across title, og:site_name, markup, logo alt and footer means each is a separate candidate entity string. Long-form and short-form pairs reduce to one another and do not count."
+    },
+    "date_skew_days": {
+      "value": 90,
+      "rationale": "Independent date sources disagreeing by more than a quarter indicate a real coherence problem rather than editorial lag or timezone drift."
+    },
+    "lastmod_uniform_count": {
+      "value": 20,
+      "rationale": "Below 20 sitemap entries, identical lastmod values are unremarkable on a new or static site. At or above it, uniform stamps indicate build-time rather than content-change timestamps."
+    },
+    "lastmod_uniform_share": {
+      "value": 0.9,
+      "rationale": "When over 90% of lastmod values fall inside one 24-hour window while visible dates span years, the signal is a deploy stamp and is worthless for crawl prioritisation."
+    },
+    "stale_content_months": {
+      "value": 18,
+      "rationale": "A publisher-profile site whose newest article is over 18 months old reads as dormant to a freshness-sensitive consumer."
+    },
+    "copyright_lag_years": {
+      "value": 2,
+      "rationale": "A copyright year two or more years behind is a maintenance signal, but never sufficient alone: two independent staleness markers are required (rule R1)."
+    },
+    "min_sameas_to_check": {
+      "value": 1,
+      "rationale": "Off-site resolution runs only when at least one sameAs identifier is declared; it never goes looking for identifiers that were not offered."
+    },
+    "max_sameas_to_check": {
+      "value": 6,
+      "rationale": "Caps off-site requests. Six covers the authoritative identifiers that matter without turning the audit into a link checker."
+    },
+    "external_reference_min_words": {
+      "value": 300,
+      "rationale": "Articles and documentation of 300 words or more that state quantified claims are expected to cite something; shorter pages are exempt."
+    },
+    "about_fact_markers_required": {
+      "value": 2,
+      "rationale": "An entity-home page counts as a citable primary source when it states at least two canonical fact types (founding date, location, leadership, headcount, category). One is not enough for a third party to repeat a consistent description."
+    },
+    "about_page_min_words": {
+      "value": 60,
+      "rationale": "An about page with fewer than 60 words of main text is a client-rendered shell or a placeholder, not a statement of facts. Judging it would report the absence of facts the page never had the chance to state; it is recorded as an observation instead."
+    }
+  },
+  "answerability": {
+    "self_containment_ratio": {
+      "value": 0.6,
+      "rationale": "Below 60% self-contained section openers, a majority of retrieved passages from the page would begin with a reference to something outside the passage. Above roughly 0.75 passages survive chunk retrieval materially better, which is why 0.6 is a defect line and not a quality target."
+    },
+    "min_sentences_for_self_containment": {
+      "value": 12,
+      "rationale": "A ratio over fewer than 12 sentences is noise; short marketing pages are exempt."
+    },
+    "self_containment_page_share": {
+      "value": 0.5,
+      "rationale": "The finding requires at least half the sampled content pages to fail, so one unusual page does not characterise the site."
+    },
+    "definitional_paragraphs": {
+      "value": 5,
+      "rationale": "A definitional sentence must appear in the first five paragraphs of the homepage or about page; further down it is not what a retrieval system lifts to answer 'What is X?'. Five rather than three because real homepages open with badges, link lines and taglines: calibration found a documentation homepage's definition in its fourth paragraph."
+    },
+    "fluff_ratio": {
+      "value": 0.35,
+      "rationale": "Over a third of sentences carrying an unquantified superlative indicates promotional density that leaves little extractable."
+    },
+    "factual_ratio": {
+      "value": 0.2,
+      "rationale": "Paired with the fluff ratio: a page may be legitimately promotional AND factual, and only the combination of high fluff with low verifiable content is a defect."
+    },
+    "long_page_words": {
+      "value": 1200,
+      "rationale": "Above 1200 words a page needs addressable heading anchors for a consumer to cite a fragment rather than the whole document."
+    },
+    "answer_proximity_chars": {
+      "value": 300,
+      "rationale": "A question-shaped heading whose answer starts more than 300 characters later puts the question and the answer in different retrieval chunks."
+    },
+    "max_paragraph_words": {
+      "value": 90,
+      "rationale": "Median paragraphs over 90 words give a chunker no natural boundary, so passages straddle topics."
+    },
+    "max_heading_free_words": {
+      "value": 600,
+      "rationale": "A 600-word span with no heading is both unchunkable for retrieval and unscannable for a reader."
+    },
+    "min_words_for_prose_checks": {
+      "value": 120,
+      "rationale": "Below 120 words in the main region a page has too little prose for form heuristics to mean anything."
+    },
+    "index_page_link_text_share": {
+      "value": 0.5,
+      "rationale": "A page whose main-region text is at least half link text is an index -- a section front, category listing or directory -- whose job is to route to content rather than to be quoted. Prose-quality checks that expect a content page to name its subject are not applied to it."
+    },
+    "english_stopword_share": {
+      "value": 0.08,
+      "rationale": "When a page declares no language, it is treated as English only if at least 8% of its word tokens are high-frequency English function words. Below that the English lexicons are not applied and the checks are skipped (rule R6), because judging non-English prose with an English opener list produces nonsense."
+    },
+    "question_heading_min_pages": {
+      "value": 3,
+      "rationale": "The site-level absence of question-shaped headings is only meaningful across at least three content pages that carry headings at all."
+    }
+  },
+  "engagement": {
+    "above_fold_nodes": {
+      "value": 120,
+      "rationale": "An explicit, stated proxy for a viewport: the first 120 elements of the main region in document order. This package has no layout engine and does not claim to measure a real fold."
+    },
+    "min_value_prop_words": {
+      "value": 6,
+      "rationale": "A value proposition needs a full clause. Fewer than six words is a label, not a statement of what the page offers."
+    },
+    "max_above_fold_ctas": {
+      "value": 5,
+      "rationale": "Five or more distinct call-to-action targets above the fold with no single primary action produces choice paralysis for a visitor who arrived with one intent."
+    },
+    "cls_image_share": {
+      "value": 0.4,
+      "rationale": "When over 40% of main-region images declare neither dimensions nor aspect-ratio, content visibly jumps as images load."
+    },
+    "min_images_for_cls": {
+      "value": 3,
+      "rationale": "Below three images the share is not meaningful."
+    },
+    "max_blocking_head_scripts": {
+      "value": 3,
+      "rationale": "Up to three synchronous head scripts is common practice; beyond that first paint is materially delayed for the arriving visitor."
+    },
+    "heavy_page_bytes": {
+      "value": 2097152,
+      "rationale": "A 2 MB HTML document alone is far over budget on a mobile connection, which is how most assistant referrals arrive."
+    },
+    "sticky_height_px": {
+      "value": 200,
+      "rationale": "Cumulative fixed-position chrome over 200px consumes a quarter of a small viewport before any content is visible."
+    },
+    "max_form_required_fields": {
+      "value": 6,
+      "rationale": "More than six required fields on the primary conversion form measurably increases abandonment relative to the information the stated action needs."
+    },
+    "min_nav_links_for_skip_link": {
+      "value": 15,
+      "rationale": "A navigation block of 15 or more links is worth skipping for keyboard and screen-reader users; a small nav is not."
+    },
+    "contrast_aa_ratio": {
+      "value": 4.5,
+      "rationale": "WCAG 2.x AA for normal-size text. Computed only where both colours are statically resolvable; otherwise the check is skipped, never guessed."
+    },
+    "contrast_aa_large_ratio": {
+      "value": 3.0,
+      "rationale": "WCAG 2.x AA minimum for large text (18pt, or 14pt bold), where the lower 3:1 ratio applies. Computed only where both colours are statically resolvable."
+    },
+    "max_reading_sentence_words": {
+      "value": 34,
+      "rationale": "Mean sentence length above 34 words is well past comfortable screen reading."
+    },
+    "deep_page_min_depth": {
+      "value": 2,
+      "rationale": "At depth 2 or more, a visitor arriving directly has no journey behind them and needs an explicit breadcrumb or parent link to situate themselves."
+    },
+    "excessive_depth": {
+      "value": 4,
+      "rationale": "Primary commercial pages at click depth 4 or more from the homepage dilute internal authority and lengthen every path to them."
+    },
+    "broken_link_share": {
+      "value": 0.1,
+      "rationale": "Above 10% of sampled in-body internal links resolving to errors, the page's navigation is actively misleading."
+    },
+    "min_links_for_broken_check": {
+      "value": 5,
+      "rationale": "Below five sampled links the share statistic is not meaningful."
+    },
+    "site_search_url_threshold": {
+      "value": 200,
+      "rationale": "Above 200 known URLs a visitor who lands on the wrong page cannot self-rescue by browsing, so search becomes load-bearing."
+    },
+    "overlay_z_index": {
+      "value": 100,
+      "rationale": "A z-index of 100 or more, combined with covering geometry, distinguishes a content-blocking layer from ordinary stacked UI."
+    },
+    "title_overlap_min": {
+      "value": 0.2,
+      "rationale": "title and h1 sharing under 20% of their content words describe materially different things. Above it, differences are normal editorial variation between a search title and an on-page heading."
+    },
+    "skip_link_scan_nodes": {
+      "value": 30,
+      "rationale": "A skip link only helps if it is among the first focusable elements, so it is looked for within the first 30 elements of the body."
+    },
+    "min_headings_for_skip_check": {
+      "value": 2,
+      "rationale": "Heading-hierarchy analysis needs at least two headings in the main region to have a hierarchy to skip."
+    }
+  },
+  "http": {
+    "max_redirect_hops": {
+      "value": 2,
+      "rationale": "More than two hops is reported because fetchers with low hop budgets abandon the chain, and each hop adds latency to a live retrieval."
+    },
+    "slow_ttfb_ms": {
+      "value": 1500,
+      "rationale": "A 75th-percentile time to first byte above 1.5s reduces crawl frequency and risks timeouts for live fetchers. Reported at info level only, because network position affects the measurement."
+    },
+    "soft_404_text_share": {
+      "value": 0.4,
+      "rationale": "A 200-status page whose main text is under 40% of its template median, combined with not-found wording, indicates a soft 404. Both signals are required (rule R1)."
+    }
+  },
+  "profile": {
+    "ambiguity_margin": {
+      "value": 0.15,
+      "rationale": "When the top two site profiles score within 15% of each other, no type is assumed: only type-agnostic checks run and the report says so. Refusing to guess beats guessing wrong, because a confident wrong profile produces a page of confident wrong findings."
+    }
+  },
+  "template": {
+    "skeleton_depth": {
+      "value": 6,
+      "rationale": "Six levels of DOM structure identify a template without letting deep content lists, whose length varies per page, dominate the fingerprint."
+    },
+    "shingle_k": {
+      "value": 5,
+      "rationale": "Five-step shingles are long enough to be distinctive and short enough to tolerate an inserted optional module."
+    },
+    "jaccard_threshold": {
+      "value": 0.85,
+      "rationale": "85% shingle overlap groups pages that differ only by an optional block (a product page with and without reviews) while keeping genuinely different templates apart."
+    }
+  },
+  "recommendations": {
+    "single_point_of_failure_share": {
+      "value": 0.6,
+      "rationale": "When 60% or more of findings share one root cause -- one template, one CMS field, one build step -- the leverage recommendation is to fix it at the source, which reframes many findings as one engineering task."
+    },
+    "max_recommendations": {
+      "value": 14,
+      "rationale": "Caps proactive advice so the action plan stays readable. Beyond roughly a dozen items a non-expert cannot act on the list, which defeats the purpose."
+    },
+    "action_plan_size": {
+      "value": 5,
+      "rationale": "The report leads with five prioritised items because that is what a reader will actually start on this week."
+    }
+  },
+  "sitemap": {
+    "coverage_min_urls": {
+      "value": 20,
+      "rationale": "Section-coverage gaps are only judged on sitemaps of 20+ URLs; a small sitemap on a small site is often deliberately selective."
+    },
+    "round_limits": {
+      "value": [
+        1000,
+        5000,
+        10000,
+        50000
+      ],
+      "rationale": "URL counts that sit exactly on common generator page sizes and the protocol's 50,000 cap indicate a file cut off by its generator rather than a complete inventory."
+    }
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "name": "brand-ai-readiness-audit",
+  "version": "1.0.0",
+  "description": "Audits any website for AI-discoverability and on-site-engagement failures across five analysis gates, and emits an evidence-backed, prioritized audit report. Read-only and recommend-only: it never modifies the site it audits.",
+  "license": "MIT",
+  "entrypoint": "ai-readiness-audit",
+  "skills": [
+    {
+      "id": "ai-readiness-audit",
+      "path": "skills/ai-readiness-audit",
+      "entrypoint": true,
+      "gate": "all",
+      "role": "Orchestrates the audit: preflight and safety checks, discovery and stratified sampling, the single polite crawl into the evidence ledger, fan-out to the six specialists, the eight-step merge, proactive recommendations, and the final verified report."
+    },
+    {
+      "id": "access-policy-audit",
+      "path": "skills/access-policy-audit",
+      "gate": "G0",
+      "role": "Gate G0, reach: whether a crawler is let in at all. robots.txt evaluated per AI agent, indexing and snippet directives, bot gating and challenge pages, sitemaps, redirect chains and canonical host duplication."
+    },
+    {
+      "id": "render-extraction-audit",
+      "path": "skills/render-extraction-audit",
+      "gate": "G1",
+      "role": "Gate G1, read: whether the page's text exists for a machine. Client-side render gaps detected in three tiers without requiring a browser, plus facts locked inside images, SVG, iframes, PDFs and video."
+    },
+    {
+      "id": "structured-data-audit",
+      "path": "skills/structured-data-audit",
+      "gate": "G2",
+      "role": "Gate G2, interpret: whether a machine knows what the facts mean. JSON-LD, Microdata and RDFa walked up an eight-rung validity ladder, profile-conditional property coverage, entity-graph linkage, and markup that contradicts the visible page."
+    },
+    {
+      "id": "entity-trust-audit",
+      "path": "skills/entity-trust-audit",
+      "gate": "G2-G3",
+      "role": "Gates G2 to G3, identity and time: entity disambiguation posture, brand-name consistency across surfaces, sameAs corroboration, date coherence including build-time lastmod stamping, and the surface the site offers for third-party corroboration."
+    },
+    {
+      "id": "answerability-audit",
+      "path": "skills/answerability-audit",
+      "gate": "G3",
+      "role": "Gate G3, cite: whether a fact can be lifted and quoted. Passage self-containment under chunked retrieval, definitional statements, question-shaped coverage, fragment addressability and extractable fact structure."
+    },
+    {
+      "id": "engagement-audit",
+      "path": "skills/engagement-audit",
+      "gate": "GE",
+      "role": "Gate GE, engage: the deep, context-free arrival. Above-the-fold orientation, content-blocking friction, navigation and context retention computed over the crawled link graph, conversion path clarity and readability."
+    }
+  ]
+}

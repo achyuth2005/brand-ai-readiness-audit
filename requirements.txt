@@ -1,0 +1,23 @@
+# Required. Standard-library first: the egress gateway, SSRF defence, robots.txt matcher,
+# rate limiter and evidence ledger need nothing beyond Python itself.
+beautifulsoup4>=4.12,<5      # DOM traversal, chosen for legibility
+jsonschema>=4.18,<5          # validates the report and findings files against schema/
+certifi>=2023.7.22           # CA bundle, so TLS verification works on Python builds without one
+
+# Optional. Each is feature-detected; the audit degrades gracefully without it and says so.
+lxml>=5,<7                   # faster, more lenient HTML parser backend for beautifulsoup4
+tinycss2>=1.2,<2             # CSS tokenizer for overlay, scroll-lock and contrast checks
+python-dateutil>=2.8,<3      # extra date formats for freshness checks
+charset-normalizer>=3,<4     # encoding detection for undeclared charsets
+protego>=0.3,<1              # cross-check for the built-in RFC 9309 robots.txt matcher
+extruct>=0.16,<1             # broader Microdata and RDFa extraction
+
+# Optional render tier. Not installed by default: install explicitly, then run
+# `playwright install chromium`. Without it, client-side rendering is still detected
+# from hydration payloads.
+# playwright>=1.44,<2
+
+# Deliberately absent: OCR and machine-learning packages (determinism, and the 50 MB
+# limit), HTTP client libraries (the gateway pins resolved addresses using http.client),
+# and tldextract (it downloads the Public Suffix List at runtime, which would break
+# determinism).
