@@ -11,7 +11,8 @@ plus prioritized fixes that say how to confirm they worked. It is **read-only an
 recommend-only**. It never changes the site it audits.
 
 > **Adobe University Hackathon 2026: Round 4 Finalist (top 45 of 100,000+ teams).**
-> Designed and built by [Achyuth A](https://www.linkedin.com/in/achyuth2005/) (IIT Guwahati).
+> Designed and built by [Achyuth A](https://www.linkedin.com/in/achyuth2005/), Aditya Chauhan and
+> Aditya Prabhakar (IIT Guwahati).
 > This is an independent student project. It is not affiliated with or endorsed by Adobe.
 
 ![Python](https://img.shields.io/badge/python-3.9%E2%80%933.13-3776AB?logo=python&logoColor=white)
