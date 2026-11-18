@@ -1,0 +1,51 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - name: Install pinned dependencies
+        run: python -m pip install -r requirements.txt
+      # The suite is offline by design: tests/helpers.py makes any socket or DNS call fail.
+      - name: Run test suite
+        run: bash tests/run_tests.sh -v
+      - name: Sample audit is byte-identical across two runs
+        run: |
+          python examples/sample_audit.py --out run1 | tee run1.txt
+          python examples/sample_audit.py --out run2 > run2.txt
+          cmp run1/report/audit.json run2/report/audit.json
+          cmp run1/report/audit.md run2/report/audit.md
+
+  docker:
+    name: docker image (offline)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build image
+        run: docker build -t brand-ai-readiness-audit .
+      - name: Run test suite with networking disabled
+        run: docker run --rm --network none brand-ai-readiness-audit
+      - name: Run sample audit with networking disabled
+        run: docker run --rm --network none brand-ai-readiness-audit python /app/examples/sample_audit.py

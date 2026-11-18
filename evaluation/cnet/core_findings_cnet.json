@@ -1,0 +1,91 @@
+{
+ "site": "https://www.cnet.com/",
+ "derived_from": [
+  "phase3/minisweep/cnet.com",
+  "phase3/cnet_r2",
+  "phase3/rehearsal2_cnet_opus",
+  "phase3/rehearsal3_cnet_sonnet"
+ ],
+ "date": "2026-09-27",
+ "core": [
+  {
+   "check_id": "G0.ROBOTS.AI_AGENT_BLOCKED",
+   "severity": "critical"
+  },
+  {
+   "check_id": "G0.DIRECTIVE.NOARCHIVE_NOCACHE",
+   "severity": "high"
+  },
+  {
+   "check_id": "G0.SITEMAP.URLS_BROKEN",
+   "severity": "medium"
+  },
+  {
+   "check_id": "G2.SD.RECOMMENDED_PROP_MISSING",
+   "severity": "medium"
+  },
+  {
+   "check_id": "G3.CORROB.NO_CITABLE_PRIMARY_SOURCE",
+   "severity": "medium"
+  },
+  {
+   "check_id": "G3.ENTITY.AMBIGUITY_RISK",
+   "severity": "medium"
+  },
+  {
+   "check_id": "G3.ENTITY.NAME_INCONSISTENCY",
+   "severity": "medium"
+  },
+  {
+   "check_id": "GE.NAV.ORPHAN_PAGES",
+   "severity": "medium"
+  },
+  {
+   "check_id": "GE.ORIENT.NO_H1",
+   "severity": "medium"
+  },
+  {
+   "check_id": "GE.ORIENT.NO_PRIMARY_CTA",
+   "severity": "medium"
+  },
+  {
+   "check_id": "G1.NONTEXT.ALT_NON_DESCRIPTIVE",
+   "severity": "low"
+  },
+  {
+   "check_id": "G2.SD.TYPE_MISMATCH",
+   "severity": "low"
+  },
+  {
+   "check_id": "G3.ANSW.KEY_FACTS_UNLISTED",
+   "severity": "low"
+  },
+  {
+   "check_id": "G3.ANSW.NO_ANCHOR_ADDRESSABILITY",
+   "severity": "low"
+  },
+  {
+   "check_id": "G3.CORROB.NO_PRESS_KIT",
+   "severity": "low"
+  },
+  {
+   "check_id": "G3.FRESH.DATE_CONTRADICTION",
+   "severity": "low"
+  },
+  {
+   "check_id": "GE.ORIENT.NO_VALUE_PROP",
+   "severity": "low"
+  },
+  {
+   "check_id": "GE.READ.NO_LISTS",
+   "severity": "low"
+  }
+ ],
+ "variable": [
+  {
+   "check_id": "G2.SD.MARKUP_TEXT_CONTRADICTION",
+   "severity": "low",
+   "note": "appeared in 1 of 5 runs (cold replay); depends on which article pages are sampled"
+  }
+ ]
+}

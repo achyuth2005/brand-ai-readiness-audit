@@ -15,11 +15,43 @@ recommend-only**. It never changes the site it audits.
 > [Aditya Prabhakar](https://github.com/aditya-prabhakar-13) (IIT Guwahati).
 > This is an independent student project. It is not affiliated with or endorsed by Adobe.
 
-![Python](https://img.shields.io/badge/python-3.9%E2%80%933.13-3776AB?logo=python&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-115%20passing-brightgreen)
+[![tests](https://github.com/achyuth2005/brand-ai-readiness-audit/actions/workflows/tests.yml/badge.svg)](https://github.com/achyuth2005/brand-ai-readiness-audit/actions/workflows/tests.yml)
+![Python](https://img.shields.io/badge/python-3.11%E2%80%933.13-3776AB?logo=python&logoColor=white)
 ![Checks](https://img.shields.io/badge/checks-120-blue)
 ![Format](https://img.shields.io/badge/format-agentskills.io-purple)
 ![License](https://img.shields.io/badge/license-MIT-green)
+
+## Evaluation results
+
+Raw records for every number below are in [`evaluation/`](evaluation). The engine in this
+repository is the evaluated one, and `requirements.txt` pins the evaluated environment.
+
+| Result | How it was measured | Check it yourself |
+| :--- | :--- | :--- |
+| **115 tests pass** | Offline `unittest` suite: detectors with negative controls, SSRF and robots.txt safety, dominance masking, schema, determinism. Any socket or DNS call during a test fails it. | `docker run --rm --network none brand-ai-readiness-audit`; also run by CI on every push |
+| **47 unseen sites, 57 hand-labelled findings** | The unchanged engine was run live on 47 sites outside the calibration set; 36 published a verified report. Each of their 57 critical/high findings was checked by hand against the stored response bytes: 36 of the 55 decidable ones were true (6 of those overstated), 19 were false positives. | [`labels.md`](evaluation/out-of-sample/labels.md) gives every label and its reason; [`results.md`](evaluation/out-of-sample/results.md) gives per-site results |
+| **36/36 crawls re-analyse byte-identically** | Each stored crawl from those 36 runs was re-analysed offline twice, and the two `audit.json` files were compared byte for byte. A re-check seven weeks later matched on 35/36; the exception has a specialist running right at its 90 s time cap ([details](evaluation#out-of-sample-47-sites-the-engine-had-never-seen-2026-09-27)). | [`determinism.tsv`](evaluation/out-of-sample/determinism.tsv), [re-check](evaluation/out-of-sample/determinism-recheck-2026-11-18.tsv); CI repeats the test on a bundled sample site |
+| **18/18 core findings in 5/5 runs** | Five independent live audits of cnet.com: two by the engine alone, three by Claude Code driving the skills (Opus 5.5 twice, Sonnet 5 once). The same 18 (check, severity) pairs appeared in every report. | `for f in evaluation/cnet/reports/*.json; do python3 evaluation/cnet/compare_core.py "$f"; done` |
+
+The false positives are concentrated in a few checks (all 7 `data-nosnippet` findings were
+wrong); see [Known limitations](#11-known-limitations).
+
+## Quick start (Docker)
+
+```bash
+git clone https://github.com/achyuth2005/brand-ai-readiness-audit.git && cd brand-ai-readiness-audit
+docker build -t brand-ai-readiness-audit .
+
+# Run the 115 tests with networking disabled
+docker run --rm --network none brand-ai-readiness-audit
+
+# Audit a bundled sample site offline (prints the report path and its SHA-256, the same on every run)
+docker run --rm --network none brand-ai-readiness-audit python /app/examples/sample_audit.py
+
+# Audit a live site; the report lands in ./audit-output
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD/audit-output:/out" brand-ai-readiness-audit \
+    python /app/skills/ai-readiness-audit/scripts/run_audit.py --url example.com --out /out --contact you@example.com
+```
 
 ---
 
@@ -140,6 +172,8 @@ Each specialist owns one evidence domain, runs standalone on a stored ledger, an
 imports another specialist. Shared code lives in [`lib/auditkit`](lib/auditkit).
 
 ## 5. Quick start
+
+Requires Python 3.11 or newer (or use [Docker](#quick-start-docker)).
 
 ```bash
 git clone https://github.com/achyuth2005/brand-ai-readiness-audit.git
@@ -266,7 +300,7 @@ fields are this engine's.
 tests/run_tests.sh      # offline: standard-library unittest, no network
 ```
 
-**115 tests pass** on Python 3.9–3.13. The tests cover:
+**115 tests pass** on Python 3.11–3.13, checked by CI on every push. The tests cover:
 
 - **Safety:** the method allowlist, SSRF ranges, robots.txt precedence, size caps, the
   read-only ledger, and that only the gateway modules import networking.
@@ -336,8 +370,12 @@ brand-ai-readiness-audit/
 ├── schema/                     # JSON Schemas: report, finding, ledger entry, site profile
 ├── config/thresholds.json      # every threshold, each with a written rationale
 ├── tests/                      # 115 offline tests + fixtures
+├── examples/sample_audit.py    # offline end-to-end audit of a bundled sample site
+├── evaluation/                 # raw records behind the evaluation results
+├── .github/workflows/tests.yml # CI: tests on 3.11-3.13, sample audit, Docker image
+├── Dockerfile
 ├── DESIGN.md                   # full design document (the original submission README)
-└── requirements.txt
+└── requirements.txt            # pinned to the evaluated environment
 ```
 
 ## 13. Further reading

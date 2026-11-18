@@ -6,3 +6,4 @@ venv/
 audit-output/
 out/
 *.egg-info/
+sample-output/

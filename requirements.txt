@@ -1,16 +1,43 @@
-# Required. Standard-library first: the egress gateway, SSRF defence, robots.txt matcher,
-# rate limiter and evidence ledger need nothing beyond Python itself.
-beautifulsoup4>=4.12,<5      # DOM traversal, chosen for legibility
-jsonschema>=4.18,<5          # validates the report and findings files against schema/
-certifi>=2023.7.22           # CA bundle, so TLS verification works on Python builds without one
+# Pinned to the exact environment that produced the results in evaluation/ (Python 3.11.6).
+# Requires Python 3.11+ (rpds-py 2026.6.3, pulled in by jsonschema, does not support older).
+# Standard-library first: the egress gateway, SSRF defence, robots.txt matcher, rate limiter
+# and evidence ledger need nothing beyond Python itself.
+
+# Required.
+beautifulsoup4==4.15.0       # DOM traversal, chosen for legibility
+jsonschema==4.26.0           # validates the report and findings files against schema/
+certifi==2026.7.22           # CA bundle, so TLS verification works on Python builds without one
 
 # Optional. Each is feature-detected; the audit degrades gracefully without it and says so.
-lxml>=5,<7                   # faster, more lenient HTML parser backend for beautifulsoup4
-tinycss2>=1.2,<2             # CSS tokenizer for overlay, scroll-lock and contrast checks
-python-dateutil>=2.8,<3      # extra date formats for freshness checks
-charset-normalizer>=3,<4     # encoding detection for undeclared charsets
-protego>=0.3,<1              # cross-check for the built-in RFC 9309 robots.txt matcher
-extruct>=0.16,<1             # broader Microdata and RDFa extraction
+lxml==6.1.3                  # faster, more lenient HTML parser backend for beautifulsoup4
+tinycss2==1.5.1              # CSS tokenizer for overlay, scroll-lock and contrast checks
+python-dateutil==2.9.0.post0 # extra date formats for freshness checks
+charset-normalizer==3.5.1    # encoding detection for undeclared charsets
+protego==0.7.0               # cross-check for the built-in RFC 9309 robots.txt matcher
+extruct==0.18.0              # broader Microdata and RDFa extraction
+
+# Transitive dependencies, pinned so a fresh install matches the evaluated environment.
+# (requests arrives only through extruct; the engine itself never imports it.)
+attrs==26.1.0
+html-text==0.7.1
+html5lib==1.1
+idna==3.20
+jsonschema-specifications==2025.9.1
+jstyleson==0.0.2
+lxml-html-clean==0.4.5
+mf2py==2.0.2
+pyparsing==3.3.3
+pyrdfa3==3.6.5
+rdflib==7.6.0
+referencing==0.37.0
+requests==2.34.2
+rpds-py==2026.6.3
+six==1.17.0
+soupsieve==2.10
+typing-extensions==4.16.0
+urllib3==2.8.0
+w3lib==2.4.1
+webencodings==0.6.1
 
 # Optional render tier. Not installed by default: install explicitly, then run
 # `playwright install chromium`. Without it, client-side rendering is still detected

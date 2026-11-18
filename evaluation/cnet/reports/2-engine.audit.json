@@ -1,0 +1,1673 @@
+{
+  "site": "www.cnet.com",
+  "audited_at": "2026-09-27T10:49:23Z",
+  "summary": {
+    "total_findings": 18,
+    "critical": 1,
+    "high": 1,
+    "medium": 8,
+    "low": 8,
+    "info": 0,
+    "masked": 0,
+    "observations": 4,
+    "proactive_recommendations": 4
+  },
+  "findings": [
+    {
+      "id": "F-001",
+      "title": "robots.txt blocks OAI-SearchBot, the retrieval crawler OpenAI uses to find citable sources",
+      "severity": "critical",
+      "evidence": "robots.txt line 288 declares `Disallow: /` under the `User-agent: oai-searchbot` group, which disallows 30 of 30 sampled content paths for OAI-SearchBot. OAI-SearchBot is operated by OpenAI and its job is: builds the search index chatgpt retrieves citable sources from. Googlebot is separately permitted on the same paths, so this is differential treatment rather than a site-wide crawl policy. Blocked paths include /, /10/, /12-days-of-tips/ (and 27 more).",
+      "suggested_action": {
+        "summary": "Confirm that blocking OAI-SearchBot is still the intended policy, and note that it removes citation eligibility rather than only training use.",
+        "priority": "critical"
+      },
+      "check_id": "G0.ROBOTS.AI_AGENT_BLOCKED",
+      "gate": "G0",
+      "category": "robots",
+      "confidence": "high",
+      "detected_by": "access-policy-audit",
+      "mechanism": "OAI-SearchBot is not a training crawler. Builds the search index ChatGPT retrieves citable sources from. When it is disallowed, the site is not in the candidate set an assistant can retrieve and cite at answer time, so the brand is absent from answers no matter how good its content is. This is invisible in a browser and invisible in analytics, which is why it survives for years.",
+      "scope": {
+        "level": "site",
+        "pages_affected": 30,
+        "pages_sampled": 30,
+        "example_urls": [
+          "/",
+          "/10/",
+          "/12-days-of-tips/"
+        ]
+      },
+      "evidence_refs": [
+        {
+          "kind": "metric",
+          "url_hash": "8616eec113910e80ee1bf7b22fb047296677ce751164156257a4ccccd2dfe235",
+          "name": "content_paths_blocked_for_OAI-SearchBot",
+          "value": 30,
+          "threshold": 0
+        },
+        {
+          "kind": "file_line",
+          "url_hash": "8616eec113910e80ee1bf7b22fb047296677ce751164156257a4ccccd2dfe235",
+          "path": "/robots.txt",
+          "text": "Disallow: /",
+          "line": 288
+        },
+        {
+          "kind": "metric",
+          "url_hash": "8616eec113910e80ee1bf7b22fb047296677ce751164156257a4ccccd2dfe235",
+          "name": "content_paths_blocked_for_ChatGPT-User",
+          "value": 30,
+          "threshold": 0
+        },
+        {
+          "kind": "metric",
+          "url_hash": "8616eec113910e80ee1bf7b22fb047296677ce751164156257a4ccccd2dfe235",
+          "name": "content_paths_blocked_for_Claude-SearchBot",
+          "value": 30,
+          "threshold": 0
+        },
+        {
+          "kind": "metric",
+          "url_hash": "8616eec113910e80ee1bf7b22fb047296677ce751164156257a4ccccd2dfe235",
+          "name": "content_paths_blocked_for_Claude-User",
+          "value": 30,
+          "threshold": 0
+        },
+        {
+          "kind": "metric",
+          "url_hash": "8616eec113910e80ee1bf7b22fb047296677ce751164156257a4ccccd2dfe235",
+          "name": "content_paths_blocked_for_PerplexityBot",
+          "value": 30,
+          "threshold": 0
+        },
+        {
+          "kind": "metric",
+          "url_hash": "8616eec113910e80ee1bf7b22fb047296677ce751164156257a4ccccd2dfe235",
+          "name": "content_paths_blocked_for_Perplexity-User",
+          "value": 30,
+          "threshold": 0
+        },
+        {
+          "kind": "metric",
+          "url_hash": "8616eec113910e80ee1bf7b22fb047296677ce751164156257a4ccccd2dfe235",
+          "name": "content_paths_blocked_for_Applebot",
+          "value": 30,
+          "threshold": 0
+        },
+        {
+          "kind": "metric",
+          "url_hash": "8616eec113910e80ee1bf7b22fb047296677ce751164156257a4ccccd2dfe235",
+          "name": "content_paths_blocked_for_Amazonbot",
+          "value": 30,
+          "threshold": 0
+        },
+        {
+          "kind": "metric",
+          "url_hash": "8616eec113910e80ee1bf7b22fb047296677ce751164156257a4ccccd2dfe235",
+          "name": "content_paths_blocked_for_meta-externalagent",
+          "value": 30,
+          "threshold": 0
+        }
+      ],
+      "suggested_action_detail": {
+        "steps": [
+          "Decide the policy deliberately for the two cases separately: training corpus use (GPTBot, ClaudeBot, Applebot-Extended) and live retrieval and citation (OAI-SearchBot, ChatGPT-User, Claude-SearchBot).",
+          "If the intention was to stay out of training data while remaining citable, keep the training-agent rules and remove the disallow for OAI-SearchBot on public content paths.",
+          "Keep utility paths (/cart, /checkout, /search, /admin, /api) disallowed for every agent; they are correctly excluded.",
+          "Record the decision in a comment in robots.txt so the next person does not have to re-derive the intent."
+        ],
+        "effort": "trivial",
+        "owner_role": "Infrastructure / SEO, with brand sign-off",
+        "verification": "After the change, confirm with a robots.txt tester that OAI-SearchBot is allowed on a public content path, and that the training-agent rules you intended to keep are still in force.",
+        "expected_effect": "Makes the training-versus-citation trade-off an explicit decision rather than an accidental one."
+      },
+      "severity_derivation": "G0 gate 1.00 x site scope 1.00 x primary fact 1.00 x high confidence 1.00 = 1.000 -> critical",
+      "fact_class": "primary",
+      "signal_count": 2,
+      "references": [
+        "skills/access-policy-audit/references/ai-crawler-agents.md"
+      ],
+      "notes": [
+        "A nearby comment in robots.txt suggests this block is deliberate policy. The finding is kept because the consequence for citation is frequently not the one intended, but the suggested action is framed as confirming intent rather than unblocking."
+      ]
+    },
+    {
+      "id": "F-002",
+      "title": "noarchive or nocache limits how assistants may use the page",
+      "severity": "high",
+      "evidence": "30/30 sampled content pages carry this directive. The directive value is `noarchive,follow, index, max-snippet:-1, max-video-preview:-1, max-image-preview:large`. Affected pages include https://www.cnet.com/, https://www.cnet.com/10/, https://www.cnet.com/12-days-of-tips/ (and 27 more). These pages are not utility surfaces: pagination, search results, cart, login and print views were excluded before this check ran, because a noindex on those is correct engineering.",
+      "suggested_action": {
+        "summary": "Remove noarchive from reference and evergreen content.",
+        "priority": "critical"
+      },
+      "check_id": "G0.DIRECTIVE.NOARCHIVE_NOCACHE",
+      "gate": "G0",
+      "category": "directives",
+      "confidence": "high",
+      "detected_by": "access-policy-audit",
+      "mechanism": "Microsoft documents that content marked noarchive is not included in Copilot answers or linked from them, and that nocache limits Copilot to the URL, title and snippet. The page stays indexed and ranking in search while being removed from, or thinned on, an assistant surface -- rarely what an owner of reference content intends.",
+      "scope": {
+        "level": "site",
+        "pages_affected": 30,
+        "pages_sampled": 30,
+        "example_urls": [
+          "https://www.cnet.com/",
+          "https://www.cnet.com/10/",
+          "https://www.cnet.com/12-days-of-tips/"
+        ]
+      },
+      "evidence_refs": [
+        {
+          "kind": "dom",
+          "url_hash": "b3d6a3374a69f843a39a43d1686a02ab872b057ce5ef3c97a49456717fde7ed4",
+          "selector": "head > meta:nth-of-type(2)",
+          "excerpt": "<meta content=\"width=device-width, initial-scale=1\" name=\"viewport\"/>"
+        },
+        {
+          "kind": "metric",
+          "url_hash": "b3d6a3374a69f843a39a43d1686a02ab872b057ce5ef3c97a49456717fde7ed4",
+          "name": "pages_with_directive",
+          "value": 30,
+          "threshold": 0
+        }
+      ],
+      "suggested_action_detail": {
+        "steps": [
+          "Locate where the directive is set: a template, a CMS field, a CDN rule, or an SEO plugin default. It applies to 30 sampled page(s), so it is most likely set at the template or platform level rather than per page.",
+          "Remove it from content pages while keeping it on the utility pages where it is correct: search results, faceted listings, cart and checkout, thank-you pages and print views.",
+          "If the directive was intended for a subset only, scope it with an explicit path rule rather than a global default."
+        ],
+        "effort": "trivial",
+        "owner_role": "SEO",
+        "verification": "Fetch an affected URL and inspect both the response headers and the page source: neither should carry the directive. Then confirm in a search console that the page is eligible for indexing and snippets.",
+        "expected_effect": "Restores index and quote eligibility for 30 sampled page(s) and any others sharing the same template."
+      },
+      "severity_derivation": "G0 gate 1.00 x site scope 1.00 x secondary fact 0.65 x high confidence 1.00 = 0.650 -> high",
+      "fact_class": "secondary",
+      "signal_count": 2,
+      "references": [
+        "skills/access-policy-audit/references/robots-and-directives.md"
+      ]
+    },
+    {
+      "id": "F-003",
+      "title": "Sitemap URLs do not resolve",
+      "severity": "medium",
+      "evidence": "3/24 sampled sitemap URLs returned an error status. Examples: https://www.cnet.com/a-dirty-job/ -> 410; https://www.cnet.com/adulting/ -> 410; https://www.cnet.com/adventures-in-tech/ -> 410.",
+      "suggested_action": {
+        "summary": "Regenerate the sitemap from live canonical URLs only.",
+        "priority": "high"
+      },
+      "check_id": "G0.SITEMAP.URLS_BROKEN",
+      "gate": "G0",
+      "category": "sitemap",
+      "confidence": "high",
+      "detected_by": "access-policy-audit",
+      "mechanism": "A sitemap is a declaration of what the site wants crawled. Entries that error waste crawl budget and devalue the whole file as a signal, because a consumer that finds errors in the sample trusts the rest less.",
+      "scope": {
+        "level": "section",
+        "pages_affected": 3,
+        "pages_sampled": 24,
+        "example_urls": [
+          "https://www.cnet.com/a-dirty-job/",
+          "https://www.cnet.com/adulting/",
+          "https://www.cnet.com/adventures-in-tech/"
+        ]
+      },
+      "evidence_refs": [
+        {
+          "kind": "metric",
+          "url_hash": "97a762504a1d13fa592a5c24ba2b80617398eccb93e9ec8ace7e3a454a031031",
+          "name": "sitemap_urls_failing",
+          "value": 3,
+          "threshold": 0
+        }
+      ],
+      "suggested_action_detail": {
+        "steps": [
+          "Remove the erroring URLs from the sitemap.",
+          "Generate the sitemap from the same source of truth that serves the routes, so deleted content cannot remain listed.",
+          "Add a scheduled check that fetches a sample of sitemap URLs and alerts on error statuses."
+        ],
+        "effort": "low",
+        "owner_role": "Backend engineering / SEO",
+        "verification": "Fetch every URL in the regenerated sitemap and confirm none returns 4xx or 5xx.",
+        "expected_effect": "Restores the sitemap's value as a trustworthy inventory."
+      },
+      "severity_derivation": "G0 gate 1.00 x section scope 0.55 x secondary fact 0.65 x high confidence 1.00 = 0.357 -> medium",
+      "fact_class": "secondary",
+      "signal_count": 2,
+      "references": [
+        "skills/access-policy-audit/references/robots-and-directives.md"
+      ]
+    },
+    {
+      "id": "F-004",
+      "title": "Alt text is a filename or placeholder rather than a description",
+      "severity": "low",
+      "evidence": "2/30 sampled pages carry 1 image(s) whose alt text describes nothing. Examples: 'breville-eye-q-850-auto-toaster-in-kitchen-next-to-knife-block.jpg'.",
+      "suggested_action": {
+        "summary": "Replace placeholder alt text with a description of what the image conveys.",
+        "priority": "medium"
+      },
+      "check_id": "G1.NONTEXT.ALT_NON_DESCRIPTIVE",
+      "gate": "G1",
+      "category": "non-text",
+      "confidence": "high",
+      "detected_by": "render-extraction-audit",
+      "mechanism": "Alt text of 'image' or a filename occupies the attribute without conveying anything, so the image is effectively unlabelled while appearing compliant to an automated check.",
+      "scope": {
+        "level": "section",
+        "pages_affected": 2,
+        "pages_sampled": 30,
+        "example_urls": [
+          "https://www.cnet.com/",
+          "https://www.cnet.com/5/"
+        ]
+      },
+      "evidence_refs": [
+        {
+          "kind": "dom",
+          "url_hash": "b3d6a3374a69f843a39a43d1686a02ab872b057ce5ef3c97a49456717fde7ed4",
+          "selector": "div > div:nth-of-type(2) > article > div:nth-of-type(1) > a > img",
+          "excerpt": "alt='breville-eye-q-850-auto-toaster-in-kitchen-next-to-knife-block.jpg'"
+        },
+        {
+          "kind": "metric",
+          "url_hash": "b3d6a3374a69f843a39a43d1686a02ab872b057ce5ef3c97a49456717fde7ed4",
+          "name": "non_descriptive_alt_count",
+          "value": 1,
+          "threshold": 0
+        }
+      ],
+      "suggested_action_detail": {
+        "steps": [
+          "Rewrite each alt value to state the image's content or purpose.",
+          "Where the image is decorative, use alt=\"\" instead of a placeholder word.",
+          "Add a lint rule rejecting alt values that match the filename or a placeholder word list."
+        ],
+        "effort": "low",
+        "owner_role": "Content",
+        "verification": "Confirm no alt value equals a filename, a dimension string or a placeholder word.",
+        "expected_effect": "Turns existing alt attributes into usable text."
+      },
+      "severity_derivation": "G1 gate 0.95 x section scope 0.55 x enrichment fact 0.35 x high confidence 1.00 = 0.183 -> low",
+      "fact_class": "enrichment",
+      "signal_count": 1,
+      "references": [
+        "skills/render-extraction-audit/references/non-text-facts.md"
+      ]
+    },
+    {
+      "id": "F-005",
+      "title": "Organization markup omits recommended properties: description, logo, sameAs",
+      "severity": "medium",
+      "evidence": "30/30 sampled pages publish complete Organization nodes that omit the recommended properties description, logo, sameAs.",
+      "suggested_action": {
+        "summary": "Add description, logo, sameAs to the Organization template.",
+        "priority": "high"
+      },
+      "check_id": "G2.SD.RECOMMENDED_PROP_MISSING",
+      "gate": "G2",
+      "category": "structured-data",
+      "confidence": "high",
+      "detected_by": "structured-data-audit",
+      "mechanism": "The node works, but competes poorly against more completely described entities. Each recommended property is an additional fact a consumer can use to match the entity to a query or to distinguish it from similar ones.",
+      "scope": {
+        "level": "site",
+        "pages_affected": 30,
+        "pages_sampled": 30,
+        "example_urls": [
+          "https://www.cnet.com/",
+          "https://www.cnet.com/10/",
+          "https://www.cnet.com/12-days-of-tips/"
+        ]
+      },
+      "evidence_refs": [
+        {
+          "kind": "jsonpath",
+          "url_hash": "b3d6a3374a69f843a39a43d1686a02ab872b057ce5ef3c97a49456717fde7ed4",
+          "path": "$.@graph[0]",
+          "value": "Organization"
+        },
+        {
+          "kind": "jsonpath",
+          "url_hash": "6d84a2a1e8928ad11312667497f41cc7d8ea5075476a055dfb908d71bb4c2776",
+          "path": "$.@graph[1]",
+          "value": "WebSite"
+        }
+      ],
+      "suggested_action_detail": {
+        "steps": [
+          "Emit description where the data exists.",
+          "Emit logo where the data exists.",
+          "Emit sameAs where the data exists.",
+          "Prefer omitting a property to emitting a placeholder value."
+        ],
+        "effort": "low",
+        "owner_role": "Frontend engineering / SEO",
+        "verification": "Validate an affected URL and confirm the recommended properties are present on Organization.",
+        "expected_effect": "Makes Organization entities more completely described and easier to match."
+      },
+      "severity_derivation": "G2 gate 0.70 x site scope 1.00 x secondary fact 0.65 x high confidence 1.00 = 0.455 -> medium",
+      "fact_class": "secondary",
+      "signal_count": 2,
+      "references": [
+        "skills/structured-data-audit/references/schema-profiles.md"
+      ]
+    },
+    {
+      "id": "F-006",
+      "title": "Article pages carry structured data of the wrong type",
+      "severity": "low",
+      "evidence": "1/1 sampled pages in template cluster T9 are evidenced as article pages (path class and on-page controls) and publish structured data typed BreadcrumbList, CollectionPage, ListItem, Organization, WebSite, but no Article / NewsArticle / BlogPosting node. The markup exists; it describes the page generically instead of describing the thing the page is about.",
+      "suggested_action": {
+        "summary": "Add a Article node describing the page's subject.",
+        "priority": "low"
+      },
+      "check_id": "G2.SD.TYPE_MISMATCH",
+      "gate": "G2",
+      "category": "structured-data",
+      "confidence": "medium",
+      "detected_by": "structured-data-audit",
+      "mechanism": "A product page typed only as WebPage tells a consumer it is a page, not that it sells something at a price. The facts that make the page useful for a shopping or comparison answer have no typed home, so they are inferred from prose or missed.",
+      "scope": {
+        "level": "page",
+        "pages_affected": 1,
+        "pages_sampled": 1,
+        "template_id": "T9",
+        "example_urls": [
+          "https://www.cnet.com/news/"
+        ],
+        "path_class": "article"
+      },
+      "evidence_refs": [
+        {
+          "kind": "metric",
+          "url_hash": "7c30450b823125272efa8b21cadafd3585c9643ae228190c24f6f99329cb0c64",
+          "name": "article_nodes",
+          "value": 0,
+          "threshold": 1
+        }
+      ],
+      "suggested_action_detail": {
+        "steps": [
+          "Emit a Article node on this template in addition to any WebPage node, populated from the page's own data.",
+          "Link it to the WebPage with mainEntity / mainEntityOfPage.",
+          "Fill the required properties listed in references/schema-profiles.md for that type."
+        ],
+        "effort": "medium",
+        "owner_role": "Frontend engineering / SEO",
+        "verification": "Validate an affected URL and confirm a Article node is detected.",
+        "expected_effect": "Makes the page's subject a typed entity rather than an anonymous page."
+      },
+      "severity_derivation": "G2 gate 0.70 x page scope 0.30 x primary fact 1.00 x medium confidence 0.75 = 0.158 -> low",
+      "fact_class": "primary",
+      "signal_count": 2,
+      "references": [
+        "skills/structured-data-audit/references/schema-profiles.md"
+      ]
+    },
+    {
+      "id": "F-007",
+      "title": "The about page does not state the brand's canonical facts",
+      "severity": "medium",
+      "evidence": "The entity-home page https://www.cnet.com/about/ states 1 of the canonical fact types (category definition); at least 2 of founding date, location, leadership, headcount and a category definition are needed for a citable primary source.",
+      "suggested_action": {
+        "summary": "Publish a canonical fact sheet on the about page, as text and Organization markup.",
+        "priority": "high"
+      },
+      "check_id": "G3.CORROB.NO_CITABLE_PRIMARY_SOURCE",
+      "gate": "G3",
+      "category": "corroboration",
+      "confidence": "high",
+      "detected_by": "entity-trust-audit",
+      "mechanism": "Corroboration across the web requires something consistent to corroborate. When the brand never states its own canonical facts plainly, third parties paraphrase from marketing copy and each other, and the descriptions assistants find disagree.",
+      "scope": {
+        "level": "site",
+        "pages_affected": 1,
+        "pages_sampled": 1,
+        "example_urls": [
+          "https://www.cnet.com/about/"
+        ]
+      },
+      "evidence_refs": [
+        {
+          "kind": "metric",
+          "url_hash": "69ecceca919002b1f94d1f7139c06b01fc3691cf20622b1437fb219f98bdefea",
+          "name": "canonical_fact_types_stated",
+          "value": 1,
+          "threshold": 2
+        }
+      ],
+      "suggested_action_detail": {
+        "steps": [
+          "State plainly on /about: legal name and common name variants, one-sentence definition (\"CNET is a ...\"), founding year, headquarters, leadership, headcount band, category and markets served.",
+          "Present them as a definition list or table, not only inside narrative paragraphs.",
+          "Mirror each fact in the Organization JSON-LD with a stable @id.",
+          "Link the page from the footer of every page."
+        ],
+        "effort": "low",
+        "owner_role": "Brand / Content ops",
+        "verification": "Fetch /about with JavaScript disabled and confirm every canonical fact appears as text and in the Organization node.",
+        "expected_effect": "Gives third parties one consistent source to repeat, which is what corroboration forms around."
+      },
+      "severity_derivation": "G3 gate 0.55 x site scope 1.00 x secondary fact 0.65 x high confidence 1.00 = 0.357 -> medium",
+      "fact_class": "secondary",
+      "signal_count": 2,
+      "references": [
+        "skills/entity-trust-audit/references/entity-disambiguation.md"
+      ]
+    },
+    {
+      "id": "F-008",
+      "title": "A machine has little to distinguish CNET from namesakes",
+      "severity": "medium",
+      "evidence": "Disambiguation posture scores 3 of 6 from on-site evidence only: [x] stable Organization @id: one Organization @id (https://www.cnet.com/#organization) used on 30 page(s); [ ] authoritative sameAs identifiers: 0 authoritative identifier(s) and 0 social profile(s) in sameAs (need 2 authoritative); [x] an entity-home page: entity-home page at https://www.cnet.com/about/; [x] a plain-text definitional sentence: \"CNET is a trusted digital media publication that provides expert information, reviews and analysis on consumer technologies, services and trends, to help you find exactly what you are looking for.\"; [ ] two or more disambiguating modifiers: modifiers present: category; [ ] consistent naming across surfaces: 3 irreducible name variant(s) across surfaces. Ambiguity amplifiers: the name 'CNET' is 4 characters long, which collides heavily across the web, so the score is treated as 2. This measures what the site gives a machine to resolve the entity; it does not claim any specific namesake exists.",
+      "suggested_action": {
+        "summary": "Publish an explicit identity for the brand: authoritative sameAs identifiers, two or more disambiguating modifiers, consistent naming across surfaces.",
+        "priority": "high"
+      },
+      "check_id": "G3.ENTITY.AMBIGUITY_RISK",
+      "gate": "G3",
+      "category": "entity",
+      "confidence": "medium",
+      "detected_by": "entity-trust-audit",
+      "mechanism": "When several things share a name, a machine attaches facts to whichever entity its evidence points at. Stable identifiers, authoritative sameAs links, a definitional sentence and concrete modifiers such as category, location and founding year are what let it attach this brand's facts to this brand -- without them, a brand gets merged with a namesake or its description is synthesised from whatever is nearby.",
+      "scope": {
+        "level": "site",
+        "pages_affected": 30,
+        "pages_sampled": 30,
+        "example_urls": [
+          "https://www.cnet.com/"
+        ]
+      },
+      "evidence_refs": [
+        {
+          "kind": "metric",
+          "url_hash": "b3d6a3374a69f843a39a43d1686a02ab872b057ce5ef3c97a49456717fde7ed4",
+          "name": "disambiguation_posture_score",
+          "value": 3,
+          "threshold": 5
+        },
+        {
+          "kind": "jsonpath",
+          "url_hash": "b3d6a3374a69f843a39a43d1686a02ab872b057ce5ef3c97a49456717fde7ed4",
+          "path": "$.@graph[0].name",
+          "value": "CNET"
+        }
+      ],
+      "suggested_action_detail": {
+        "steps": [
+          "Emit one Organization JSON-LD node site-wide with a stable @id (https://<domain>/#organization), legal and common name, url, logo, foundingDate, address and description.",
+          "Add sameAs links to at least 2 authoritative identifiers that already exist for the company: a Wikidata item, the official company registry entry, a LinkedIn company page, a Crunchbase profile.",
+          "Put one plain sentence near the top of the homepage and about page: \"CNET is a <category> for <audience> based in <location>.\" Mirror it in Organization.description.",
+          "State the disambiguating facts as text on the about page: category, headquarters, founding year, parent company if any."
+        ],
+        "effort": "low",
+        "owner_role": "Brand / Content ops, with SEO",
+        "verification": "Re-run the audit and confirm the posture score is 5 or more; validate the Organization node and confirm each sameAs URL resolves to a page naming this company.",
+        "expected_effect": "Gives machines the anchors needed to attach the brand's facts to the right entity."
+      },
+      "severity_derivation": "G3 gate 0.55 x site scope 1.00 x primary fact 1.00 x medium confidence 0.75 = 0.412 -> medium",
+      "fact_class": "primary",
+      "signal_count": 3,
+      "references": [
+        "skills/entity-trust-audit/references/entity-disambiguation.md"
+      ]
+    },
+    {
+      "id": "F-009",
+      "title": "The brand is named 3 different ways across the site",
+      "severity": "medium",
+      "evidence": "3 name variants that do not reduce to one another were found across naming surfaces: \"CNET\" in logo-alt, og:site_name, schema:Organization.name, schema:WebSite.name, title-suffix (93x, e.g. https://www.cnet.com/); \"Connections puzzle\" in logo-alt (1x, e.g. https://www.cnet.com/tech/); \"Services\" in title-suffix (1x, e.g. https://www.cnet.com/home/services/). Long and short forms of the same name (\"Acme\" and \"Acme Corporation\") and legal-suffix differences were merged before counting and are not part of this finding.",
+      "suggested_action": {
+        "summary": "Standardise on one brand name everywhere the site names itself.",
+        "priority": "high"
+      },
+      "check_id": "G3.ENTITY.NAME_INCONSISTENCY",
+      "gate": "G3",
+      "category": "entity",
+      "confidence": "high",
+      "detected_by": "entity-trust-audit",
+      "mechanism": "Each irreducible variant is a separate candidate entity string. Consistency is what lets a machine merge mentions into one entity; a variant that names something else entirely -- a sub-brand, a former name, an agency's own name leaking into a template -- actively attaches the brand's content to a different entity.",
+      "scope": {
+        "level": "site",
+        "pages_affected": 30,
+        "pages_sampled": 30,
+        "example_urls": [
+          "https://www.cnet.com/",
+          "https://www.cnet.com/home/services/",
+          "https://www.cnet.com/tech/"
+        ]
+      },
+      "evidence_refs": [
+        {
+          "kind": "jsonpath",
+          "url_hash": "b3d6a3374a69f843a39a43d1686a02ab872b057ce5ef3c97a49456717fde7ed4",
+          "path": "$.@graph[0].name",
+          "value": "CNET"
+        },
+        {
+          "kind": "dom",
+          "url_hash": "da7831e9040417f4b34760f2a22cb2258e0f053997963635f84bf1f540804228",
+          "selector": "#post-4928928 > header > div > a > img",
+          "excerpt": "Connections puzzle"
+        },
+        {
+          "kind": "dom",
+          "url_hash": "730e6c09019b2e3cd9f54a640cf70319a11030741722a741c532f4ab96381907",
+          "selector": "title",
+          "excerpt": "Services"
+        },
+        {
+          "kind": "metric",
+          "url_hash": "b3d6a3374a69f843a39a43d1686a02ab872b057ce5ef3c97a49456717fde7ed4",
+          "name": "irreducible_name_variants",
+          "value": 3,
+          "threshold": 2
+        }
+      ],
+      "suggested_action_detail": {
+        "steps": [
+          "Choose the canonical form (the structured data currently favours \"CNET\") and a single permitted short form.",
+          "Update og:site_name, the title-tag suffix, Organization.name, WebSite.name, logo alt text and the footer copyright line to use it.",
+          "Remove variants that name a different entity: old names, sub-brands used site-wide, or a developer's name in the template.",
+          "List legitimate alternate names in Organization.alternateName rather than using them interchangeably on surfaces."
+        ],
+        "effort": "low",
+        "owner_role": "Brand / Frontend engineering",
+        "verification": "Re-run the audit and confirm at most two name variants remain, both reducing to the canonical name.",
+        "expected_effect": "Lets machines merge every mention of the brand into one entity."
+      },
+      "severity_derivation": "G3 gate 0.55 x site scope 1.00 x secondary fact 0.65 x high confidence 1.00 = 0.357 -> medium",
+      "fact_class": "secondary",
+      "signal_count": 3,
+      "references": [
+        "skills/entity-trust-audit/references/entity-disambiguation.md"
+      ]
+    },
+    {
+      "id": "F-010",
+      "title": "Specifications, prices or steps are buried in prose",
+      "severity": "low",
+      "evidence": "2/26 sampled pages: 3 sentences state specifications, prices or steps inside running prose (e.g. \"18M\"), and the main region contains no table, definition list or list of three or more items. Affected: https://www.cnet.com/about/, https://www.cnet.com/home/.",
+      "suggested_action": {
+        "summary": "Present specifications, plans and steps as tables and lists.",
+        "priority": "medium"
+      },
+      "check_id": "G3.ANSW.KEY_FACTS_UNLISTED",
+      "gate": "G3",
+      "category": "answerability",
+      "confidence": "high",
+      "detected_by": "answerability-audit",
+      "mechanism": "Facts embedded as clauses in sentences have to be parsed out; facts in a table, definition list or ordered list survive extraction and summarisation intact, label and value together.",
+      "scope": {
+        "level": "section",
+        "pages_affected": 2,
+        "pages_sampled": 26,
+        "example_urls": [
+          "https://www.cnet.com/about/",
+          "https://www.cnet.com/home/"
+        ]
+      },
+      "evidence_refs": [
+        {
+          "kind": "metric",
+          "url_hash": "69ecceca919002b1f94d1f7139c06b01fc3691cf20622b1437fb219f98bdefea",
+          "name": "fact_sentences_in_prose",
+          "value": 3,
+          "threshold": 2
+        },
+        {
+          "kind": "dom",
+          "url_hash": "69ecceca919002b1f94d1f7139c06b01fc3691cf20622b1437fb219f98bdefea",
+          "selector": "#post-3570367 > div > div:nth-of-type(4) > div:nth-of-type(1) > div:nth-of-type(2) > div > p:nth-of-type(1)",
+          "excerpt": "18M"
+        }
+      ],
+      "suggested_action_detail": {
+        "steps": [
+          "Move specifications and prices into a <table> or <dl> with a label and value per row.",
+          "Turn sequential instructions into an <ol>.",
+          "Keep a sentence of context above each table."
+        ],
+        "effort": "low",
+        "owner_role": "Content / Frontend engineering",
+        "verification": "Confirm the facts appear inside table, dl or list elements in the raw HTML.",
+        "expected_effect": "Makes key facts extractable as label-value pairs."
+      },
+      "severity_derivation": "G3 gate 0.55 x section scope 0.55 x secondary fact 0.65 x high confidence 1.00 = 0.197 -> low",
+      "fact_class": "secondary",
+      "signal_count": 2,
+      "references": [
+        "skills/answerability-audit/references/quotability-rules.md"
+      ]
+    },
+    {
+      "id": "F-011",
+      "title": "Long pages offer no linkable section anchors",
+      "severity": "low",
+      "evidence": "4/4 sampled pages: a 2137-word page (threshold 1200) has 118 h2/h3 headings and none carries an id or an enclosing section id, so no part of it can be linked to directly. Affected: https://www.cnet.com/, https://www.cnet.com/ai-atlas/, https://www.cnet.com/home/ (and 1 more).",
+      "suggested_action": {
+        "summary": "Give every h2 and h3 a stable slug id and add an in-page table of contents.",
+        "priority": "high"
+      },
+      "check_id": "G3.ANSW.NO_ANCHOR_ADDRESSABILITY",
+      "gate": "G3",
+      "category": "answerability",
+      "confidence": "high",
+      "detected_by": "answerability-audit",
+      "mechanism": "A heading id is what makes a fragment citable: a consumer can point at the exact section that answers a question. Without ids the whole page must be cited or nothing, and a long page cited whole dilutes the passage that mattered.",
+      "scope": {
+        "level": "site",
+        "pages_affected": 4,
+        "pages_sampled": 4,
+        "example_urls": [
+          "https://www.cnet.com/",
+          "https://www.cnet.com/ai-atlas/",
+          "https://www.cnet.com/home/"
+        ]
+      },
+      "evidence_refs": [
+        {
+          "kind": "metric",
+          "url_hash": "b3d6a3374a69f843a39a43d1686a02ab872b057ce5ef3c97a49456717fde7ed4",
+          "name": "addressable_headings",
+          "value": 0,
+          "threshold": 118
+        },
+        {
+          "kind": "dom",
+          "url_hash": "b3d6a3374a69f843a39a43d1686a02ab872b057ce5ef3c97a49456717fde7ed4",
+          "selector": "div:nth-of-type(1) > div:nth-of-type(1) > div > div > div:nth-of-type(1) > h2",
+          "excerpt": "Best"
+        }
+      ],
+      "suggested_action_detail": {
+        "steps": [
+          "Generate an id from each heading's text (a stable slug) in the template or markdown renderer.",
+          "Keep ids stable when headings are lightly edited, so external links do not break.",
+          "Add a table of contents linking to the ids."
+        ],
+        "effort": "trivial",
+        "owner_role": "Frontend engineering",
+        "verification": "Load an affected URL with #<heading-slug> appended and confirm the browser scrolls to that section.",
+        "expected_effect": "Makes individual sections citable by URL."
+      },
+      "severity_derivation": "G3 gate 0.55 x site scope 1.00 x enrichment fact 0.35 x high confidence 1.00 = 0.193 -> low",
+      "fact_class": "enrichment",
+      "signal_count": 2,
+      "references": [
+        "skills/answerability-audit/references/quotability-rules.md"
+      ]
+    },
+    {
+      "id": "F-012",
+      "title": "No press or media page offers boilerplate and brand assets",
+      "severity": "low",
+      "evidence": "None of the 30 fetched pages is a press, media or newsroom page, and none of them links to one.",
+      "suggested_action": {
+        "summary": "Publish a press page with a boilerplate paragraph, fact sheet and logo files.",
+        "priority": "medium"
+      },
+      "check_id": "G3.CORROB.NO_PRESS_KIT",
+      "gate": "G3",
+      "category": "corroboration",
+      "confidence": "high",
+      "detected_by": "entity-trust-audit",
+      "mechanism": "Journalists, directories and aggregators reproduce a supplied boilerplate verbatim, but paraphrase when there is none. Verbatim reproduction across independent sources is exactly the agreement consumers treat as corroboration.",
+      "scope": {
+        "level": "site",
+        "pages_affected": 30,
+        "pages_sampled": 30,
+        "example_urls": [
+          "https://www.cnet.com/"
+        ]
+      },
+      "evidence_refs": [
+        {
+          "kind": "metric",
+          "url_hash": "b3d6a3374a69f843a39a43d1686a02ab872b057ce5ef3c97a49456717fde7ed4",
+          "name": "press_pages_found",
+          "value": 0,
+          "threshold": 1
+        }
+      ],
+      "suggested_action_detail": {
+        "steps": [
+          "Create /press with a 50-100 word company boilerplate, a fact list, leadership names, a media contact and downloadable logos.",
+          "Link it from the footer.",
+          "Keep the boilerplate identical to Organization.description."
+        ],
+        "effort": "low",
+        "owner_role": "Communications / Brand",
+        "verification": "Confirm /press returns 200, is linked from the footer, and its boilerplate matches the markup description.",
+        "expected_effect": "Gives third parties a verbatim description to repeat."
+      },
+      "severity_derivation": "G3 gate 0.55 x site scope 1.00 x enrichment fact 0.35 x high confidence 1.00 = 0.193 -> low",
+      "fact_class": "enrichment",
+      "signal_count": 2,
+      "references": [
+        "skills/entity-trust-audit/references/entity-disambiguation.md"
+      ]
+    },
+    {
+      "id": "F-013",
+      "title": "A page's own date signals contradict each other",
+      "severity": "low",
+      "evidence": "3/30 sampled pages: two published dates disagree by 136 days: structured data datePublished (2026-05-11T21:45:23-04:00) vs <time> element (2026-09-25T10:33:59-04:00) (allowed skew 90 days). Published-type and modified-type dates were compared only with their own kind.",
+      "suggested_action": {
+        "summary": "Derive every displayed and marked-up date from one stored timestamp per kind.",
+        "priority": "medium"
+      },
+      "check_id": "G3.FRESH.DATE_CONTRADICTION",
+      "gate": "G3",
+      "category": "freshness",
+      "confidence": "high",
+      "detected_by": "entity-trust-audit",
+      "mechanism": "When a page's dates disagree, a consumer cannot tell which is true and either picks one arbitrarily or distrusts all of them. A falsely fresh signal is worse than none: once detected, it discounts the site's freshness claims everywhere.",
+      "scope": {
+        "level": "section",
+        "pages_affected": 3,
+        "pages_sampled": 30,
+        "example_urls": [
+          "https://www.cnet.com/",
+          "https://www.cnet.com/home/",
+          "https://www.cnet.com/tech/"
+        ]
+      },
+      "evidence_refs": [
+        {
+          "kind": "jsonpath",
+          "url_hash": "b3d6a3374a69f843a39a43d1686a02ab872b057ce5ef3c97a49456717fde7ed4",
+          "path": "$.@graph[3].datePublished",
+          "value": "2026-05-11T21:45:23-04:00"
+        },
+        {
+          "kind": "dom",
+          "url_hash": "b3d6a3374a69f843a39a43d1686a02ab872b057ce5ef3c97a49456717fde7ed4",
+          "selector": "div > div:nth-of-type(4) > article > div:nth-of-type(2) > div:nth-of-type(3) > time",
+          "excerpt": "2026-09-25T10:33:59-04:00"
+        }
+      ],
+      "suggested_action_detail": {
+        "steps": [
+          "Find which date source is stale: usually a template default, a copied page, or a hard-coded 'updated' line.",
+          "Render the visible dates, <time> elements and JSON-LD dates from the same two fields: created and last substantively modified.",
+          "Add a build check that JSON-LD dates equal the rendered dates."
+        ],
+        "effort": "low",
+        "owner_role": "Content ops / Frontend engineering",
+        "verification": "Fetch an affected page and confirm every published-type and modified-type date agrees within a day.",
+        "expected_effect": "Makes the page's freshness claim coherent and trusted."
+      },
+      "severity_derivation": "G3 gate 0.55 x section scope 0.55 x secondary fact 0.65 x high confidence 1.00 = 0.197 -> low",
+      "fact_class": "secondary",
+      "signal_count": 2,
+      "references": [
+        "skills/entity-trust-audit/references/freshness-signals.md"
+      ]
+    },
+    {
+      "id": "F-014",
+      "title": "Sitemap pages are linked from nowhere on the site",
+      "severity": "medium",
+      "evidence": "14/18 fetched sitemap pages received no internal link from any of the 30 crawled pages. Examples: https://www.cnet.com/12-days-of-tips/, https://www.cnet.com/359-podcast/, https://www.cnet.com/5g-mobility/ (and 11 more). This is measured over the crawled sample, so a link from an uncrawled page would not be seen.",
+      "suggested_action": {
+        "summary": "Link orphaned pages from their parent section and related content.",
+        "priority": "high"
+      },
+      "check_id": "GE.NAV.ORPHAN_PAGES",
+      "gate": "GE",
+      "category": "navigation",
+      "confidence": "medium",
+      "detected_by": "engagement-audit",
+      "mechanism": "A page reachable only through the sitemap has no navigational path for a visitor and receives no internal authority. A visitor who lands elsewhere will never find it, and crawlers treat unlinked pages as unimportant.",
+      "scope": {
+        "level": "site",
+        "pages_affected": 14,
+        "pages_sampled": 18,
+        "example_urls": [
+          "https://www.cnet.com/12-days-of-tips/",
+          "https://www.cnet.com/359-podcast/",
+          "https://www.cnet.com/5g-mobility/"
+        ]
+      },
+      "evidence_refs": [
+        {
+          "kind": "metric",
+          "url_hash": "9e6ae3555b52b4f03988dd54316eb4fe17e955f100245c906018f0336ff6b2ca",
+          "name": "internal_inbound_links",
+          "value": 0,
+          "threshold": 1
+        }
+      ],
+      "suggested_action_detail": {
+        "steps": [
+          "Add each orphan to the relevant category or section index.",
+          "Link to it from related articles or products.",
+          "If a page is not worth linking, consider whether it should be in the sitemap at all."
+        ],
+        "effort": "low",
+        "owner_role": "Content / UX",
+        "verification": "Re-run the audit and confirm each page has at least one internal inbound link.",
+        "expected_effect": "Gives orphaned content a discovery path."
+      },
+      "severity_derivation": "GE gate 0.65 x site scope 1.00 x secondary fact 0.65 x medium confidence 0.75 = 0.317 -> medium",
+      "fact_class": "secondary",
+      "signal_count": 2,
+      "references": [
+        "skills/engagement-audit/references/friction-catalogue.md"
+      ]
+    },
+    {
+      "id": "F-015",
+      "title": "Pages have no h1 stating what they are",
+      "severity": "medium",
+      "evidence": "17/30 sampled pages: the page has no h1 element, so no single statement says what the page is. Affected: https://www.cnet.com/, https://www.cnet.com/12-days-of-tips/, https://www.cnet.com/359-podcast/ (and 14 more).",
+      "suggested_action": {
+        "summary": "Give every page exactly one h1 that names its subject.",
+        "priority": "critical"
+      },
+      "check_id": "GE.ORIENT.NO_H1",
+      "gate": "GE",
+      "category": "orientation",
+      "confidence": "high",
+      "detected_by": "engagement-audit",
+      "mechanism": "A visitor arriving deep in the site reads the h1 first to confirm they are in the right place. Without one, the page never states its subject, and the same gap leaves extractors guessing the page's topic.",
+      "scope": {
+        "level": "template",
+        "pages_affected": 17,
+        "pages_sampled": 30,
+        "example_urls": [
+          "https://www.cnet.com/",
+          "https://www.cnet.com/12-days-of-tips/",
+          "https://www.cnet.com/359-podcast/"
+        ]
+      },
+      "evidence_refs": [
+        {
+          "kind": "metric",
+          "url_hash": "b3d6a3374a69f843a39a43d1686a02ab872b057ce5ef3c97a49456717fde7ed4",
+          "name": "h1_count",
+          "value": 0,
+          "threshold": 1
+        },
+        {
+          "kind": "dom",
+          "url_hash": "b3d6a3374a69f843a39a43d1686a02ab872b057ce5ef3c97a49456717fde7ed4",
+          "selector": "main",
+          "excerpt": "Best of the Best Editors' picks and our top buying guides Best VPN Service for 2026: The Top-Ranked VPNs in Our Testing..."
+        }
+      ],
+      "suggested_action_detail": {
+        "steps": [
+          "Render the page's primary subject as the h1 in each template.",
+          "Style it however the design needs; the element is what matters."
+        ],
+        "effort": "trivial",
+        "owner_role": "Frontend engineering",
+        "verification": "Confirm each affected template renders exactly one h1.",
+        "expected_effect": ""
+      },
+      "severity_derivation": "GE gate 0.65 x template scope 0.80 x secondary fact 0.65 x high confidence 1.00 = 0.338 -> medium",
+      "fact_class": "secondary",
+      "signal_count": 2,
+      "references": [
+        "skills/engagement-audit/references/orientation-rules.md"
+      ]
+    },
+    {
+      "id": "F-016",
+      "title": "No clear next step is offered above the fold",
+      "severity": "medium",
+      "evidence": "3/3 sampled pages: no specific call to action appears in the first 120 elements of the main region; the only actions offered are '11 Best Meal Kits and Prepared Meal Services in 2026, Tested and Ranked', 'Amazon Smart Plug: $13 (Save $12)', 'Apple Watch Ultra 4 Gets Serious About Recovery, Without the Subscription', 'Beats Pill Portable Bluetooth Speaker: $100 (Save $50)', 'Best Cellphone Plans of 2026: Our Top Picks', which name no object. Affected: https://www.cnet.com/, https://www.cnet.com/home/services/, https://www.cnet.com/services/.",
+      "suggested_action": {
+        "summary": "Add one specific, verb-led call to action above the fold.",
+        "priority": "high"
+      },
+      "check_id": "GE.ORIENT.NO_PRIMARY_CTA",
+      "gate": "GE",
+      "category": "orientation",
+      "confidence": "high",
+      "detected_by": "engagement-audit",
+      "mechanism": "Every arrival needs an obvious next action. Generic labels such as 'Learn more' name no object, so the visitor cannot tell where they lead.",
+      "scope": {
+        "level": "site",
+        "pages_affected": 3,
+        "pages_sampled": 3,
+        "example_urls": [
+          "https://www.cnet.com/",
+          "https://www.cnet.com/home/services/",
+          "https://www.cnet.com/services/"
+        ]
+      },
+      "evidence_refs": [
+        {
+          "kind": "metric",
+          "url_hash": "b3d6a3374a69f843a39a43d1686a02ab872b057ce5ef3c97a49456717fde7ed4",
+          "name": "specific_above_fold_ctas",
+          "value": 0,
+          "threshold": 1
+        }
+      ],
+      "suggested_action_detail": {
+        "steps": [
+          "Label it with a verb and an object: 'Start a free trial', 'Book a demo', 'Add to cart'.",
+          "Replace generic 'Learn more' links with the destination they lead to."
+        ],
+        "effort": "low",
+        "owner_role": "Product / Marketing",
+        "verification": "Confirm a verb-plus-object action appears near the top of each affected page.",
+        "expected_effect": ""
+      },
+      "severity_derivation": "GE gate 0.65 x site scope 1.00 x secondary fact 0.65 x high confidence 1.00 = 0.422 -> medium",
+      "fact_class": "secondary",
+      "signal_count": 2,
+      "references": [
+        "skills/engagement-audit/references/orientation-rules.md"
+      ]
+    },
+    {
+      "id": "F-017",
+      "title": "Nothing above the fold says what the page offers",
+      "severity": "low",
+      "evidence": "2/2 sampled pages in template cluster T8: no sentence of 6 or more words naming a category of product, service or organisation appears in the first 120 elements of the main region. Affected: https://www.cnet.com/home/services/, https://www.cnet.com/services/.",
+      "suggested_action": {
+        "summary": "Add a one-sentence value proposition above the fold naming the category and audience.",
+        "priority": "high"
+      },
+      "check_id": "GE.ORIENT.NO_VALUE_PROP",
+      "gate": "GE",
+      "category": "orientation",
+      "confidence": "high",
+      "detected_by": "engagement-audit",
+      "mechanism": "A visitor decides within seconds whether they are in the right place. With no full-sentence statement of the offer near the top, they have to scroll or infer -- and a context-free arrival mostly leaves instead.",
+      "scope": {
+        "level": "section",
+        "pages_affected": 2,
+        "pages_sampled": 2,
+        "template_id": "T8",
+        "example_urls": [
+          "https://www.cnet.com/home/services/",
+          "https://www.cnet.com/services/"
+        ],
+        "path_class": "service"
+      },
+      "evidence_refs": [
+        {
+          "kind": "metric",
+          "url_hash": "730e6c09019b2e3cd9f54a640cf70319a11030741722a741c532f4ab96381907",
+          "name": "above_fold_value_prop_sentences",
+          "value": 0,
+          "threshold": 1
+        },
+        {
+          "kind": "dom",
+          "url_hash": "730e6c09019b2e3cd9f54a640cf70319a11030741722a741c532f4ab96381907",
+          "selector": "main",
+          "excerpt": "LATEST STORIES Save 15% Off a Japanese eSIM Data Plan With Ubigi and Our Exclusive Code Ring's New Battery Doorbell 4K Pro Is Already Seein..."
+        }
+      ],
+      "suggested_action_detail": {
+        "steps": [
+          "Write one sentence: what it is, who it is for, what outcome it gives.",
+          "Place it directly under the h1 as real text, not inside an image or carousel."
+        ],
+        "effort": "low",
+        "owner_role": "Content / Marketing",
+        "verification": "Fetch the page and confirm the sentence appears within the first elements of the main region.",
+        "expected_effect": ""
+      },
+      "severity_derivation": "GE gate 0.65 x section scope 0.55 x secondary fact 0.65 x high confidence 1.00 = 0.232 -> low",
+      "fact_class": "secondary",
+      "signal_count": 2,
+      "references": [
+        "skills/engagement-audit/references/orientation-rules.md"
+      ]
+    },
+    {
+      "id": "F-018",
+      "title": "Long pages contain no lists or tables at all",
+      "severity": "low",
+      "evidence": "3/4 sampled pages: a 2137-word page contains no list, table or definition list. Affected: https://www.cnet.com/, https://www.cnet.com/home/, https://www.cnet.com/tech/.",
+      "suggested_action": {
+        "summary": "Break enumerations and comparisons out into lists and tables.",
+        "priority": "high"
+      },
+      "check_id": "GE.READ.NO_LISTS",
+      "gate": "GE",
+      "category": "readability",
+      "confidence": "high",
+      "detected_by": "engagement-audit",
+      "mechanism": "Readers scan before they read. A long page with no list or table offers nothing scannable, so visitors cannot find the part they came for.",
+      "scope": {
+        "level": "site",
+        "pages_affected": 3,
+        "pages_sampled": 4,
+        "example_urls": [
+          "https://www.cnet.com/",
+          "https://www.cnet.com/home/",
+          "https://www.cnet.com/tech/"
+        ]
+      },
+      "evidence_refs": [
+        {
+          "kind": "metric",
+          "url_hash": "b3d6a3374a69f843a39a43d1686a02ab872b057ce5ef3c97a49456717fde7ed4",
+          "name": "lists_and_tables",
+          "value": 0,
+          "threshold": 1
+        }
+      ],
+      "suggested_action_detail": {
+        "steps": [
+          "Turn any 'there are three ways...' paragraph into a list.",
+          "Put comparisons in a table."
+        ],
+        "effort": "low",
+        "owner_role": "Content",
+        "verification": "Confirm affected pages contain lists or tables.",
+        "expected_effect": ""
+      },
+      "severity_derivation": "GE gate 0.65 x site scope 1.00 x enrichment fact 0.35 x high confidence 1.00 = 0.228 -> low",
+      "fact_class": "enrichment",
+      "signal_count": 2,
+      "references": [
+        "skills/engagement-audit/references/friction-catalogue.md"
+      ]
+    }
+  ],
+  "executive_summary": "www.cnet.com was audited across 30 fetched pages in 10 template cluster(s), profiled as publisher (high confidence). 18 finding(s): 1 critical, 1 high, 8 medium, 8 low. 0 further finding(s) are masked by a root cause and will resolve or surface once it is fixed. The earliest failing stage is G0 (Reach -- is the crawler let in?); problems there limit every later stage. Start with: F-001 robots.txt blocks OAI-SearchBot, the retrieval crawler OpenAI uses to find citable sources; F-002 noarchive or nocache limits how assistants may use the page; F-015 Pages have no h1 stating what they are.",
+  "action_plan": {
+    "first_five": [
+      "F-001",
+      "F-002",
+      "F-015",
+      "F-005",
+      "F-016"
+    ],
+    "items": [
+      {
+        "id": "F-001",
+        "type": "finding",
+        "title": "robots.txt blocks OAI-SearchBot, the retrieval crawler OpenAI uses to find citable sources",
+        "severity": "critical",
+        "effort": "trivial",
+        "owner_role": "Infrastructure / SEO, with brand sign-off",
+        "action": "Confirm that blocking OAI-SearchBot is still the intended policy, and note that it removes citation eligibility rather than only training use."
+      },
+      {
+        "id": "F-002",
+        "type": "finding",
+        "title": "noarchive or nocache limits how assistants may use the page",
+        "severity": "high",
+        "effort": "trivial",
+        "owner_role": "SEO",
+        "action": "Remove noarchive from reference and evergreen content."
+      },
+      {
+        "id": "F-015",
+        "type": "finding",
+        "title": "Pages have no h1 stating what they are",
+        "severity": "medium",
+        "effort": "trivial",
+        "owner_role": "Frontend engineering",
+        "action": "Give every page exactly one h1 that names its subject."
+      },
+      {
+        "id": "F-005",
+        "type": "finding",
+        "title": "Organization markup omits recommended properties: description, logo, sameAs",
+        "severity": "medium",
+        "effort": "low",
+        "owner_role": "Frontend engineering / SEO",
+        "action": "Add description, logo, sameAs to the Organization template."
+      },
+      {
+        "id": "F-016",
+        "type": "finding",
+        "title": "No clear next step is offered above the fold",
+        "severity": "medium",
+        "effort": "low",
+        "owner_role": "Product / Marketing",
+        "action": "Add one specific, verb-led call to action above the fold."
+      }
+    ],
+    "rationale": "Critical findings first, then high, then the rest; within each tier, ordered by impact x confidence / effort, where impact is the computed severity score. Findings masked by a root cause are excluded, so no item appears before the finding that explains it. Proactive recommendations are weighted below findings of equal priority, because they fix no observed defect."
+  },
+  "gate_scorecard": {
+    "G0_reach": {
+      "status": "fail",
+      "findings": 3,
+      "masked": 0,
+      "note": "1 check(s) skipped; see coverage.checks_skipped"
+    },
+    "G1_read": {
+      "status": "partial",
+      "findings": 1,
+      "masked": 0,
+      "note": "1 check(s) skipped; see coverage.checks_skipped"
+    },
+    "G2_interpret": {
+      "status": "partial",
+      "findings": 2,
+      "masked": 0,
+      "note": "1 check(s) skipped; see coverage.checks_skipped"
+    },
+    "G3_cite": {
+      "status": "partial",
+      "findings": 7,
+      "masked": 0,
+      "note": "1 check(s) skipped; see coverage.checks_skipped"
+    },
+    "GE_engage": {
+      "status": "partial",
+      "findings": 5,
+      "masked": 0
+    }
+  },
+  "masked_findings": [],
+  "proactive_recommendations": [
+    {
+      "id": "R-001",
+      "title": "Make the drift-prone fixes impossible to regress",
+      "category": "composition",
+      "gate": "G3",
+      "generator": "leverage_synthesis",
+      "rationale": "2 finding type(s) on this site are data-drift defects that reappear after a one-off fix: G0.SITEMAP.URLS_BROKEN, G3.FRESH.DATE_CONTRADICTION.",
+      "mechanism": "Values that are maintained in two places drift apart again. A process fix -- generating both from one source, or asserting agreement in CI -- is worth more than an edit that can silently regress.",
+      "expected_effect": "",
+      "priority": "medium",
+      "effort": "medium",
+      "owner_role": "Engineering lead",
+      "implementation": [
+        "G0.SITEMAP.URLS_BROKEN: a sitemap generated from live routes, with sampled resolution checks.",
+        "G3.FRESH.DATE_CONTRADICTION: dates rendered and marked up from one stored timestamp per kind."
+      ],
+      "verification": "Deliberately introduce a mismatch in a staging build and confirm the assertion fails the build.",
+      "is_defect": false
+    },
+    {
+      "id": "R-002",
+      "title": "Re-run this audit on a schedule and track the gate scorecard",
+      "category": "composition",
+      "gate": "G0",
+      "generator": "leverage_synthesis",
+      "rationale": "Discoverability regresses silently: a template change, a CDN rule or a plugin update can undo a fix without anyone noticing.",
+      "mechanism": "A scheduled audit turns discoverability into a monitored property. The gate scorecard shows which stage of the chain broke, and determinism means any change between runs is a real change to the site.",
+      "expected_effect": "",
+      "priority": "low",
+      "effort": "low",
+      "owner_role": "Engineering lead",
+      "implementation": [
+        "Run the audit weekly in CI against production.",
+        "Alert when a gate's status worsens or a new critical finding appears.",
+        "Supply the previous run's ledger with --prior-ledger to detect dates advanced without content changes."
+      ],
+      "verification": "Confirm the scheduled job runs and that a deliberate regression in staging produces an alert.",
+      "is_defect": false
+    },
+    {
+      "id": "R-003",
+      "title": "Reference the Organization @id from every content entity",
+      "category": "structured-data",
+      "gate": "G2",
+      "generator": "posture_gap",
+      "rationale": "An Organization @id (https://www.cnet.com/#organization) is declared, and 42 of 54 content entities reference it.",
+      "mechanism": "Every reference to the one Organization node consolidates the brand's facts onto a single entity instead of leaving unlinked islands.",
+      "expected_effect": "",
+      "priority": "low",
+      "effort": "low",
+      "owner_role": "Frontend engineering",
+      "implementation": [
+        "Reference the @id from publisher, brand, provider and author on the remaining entity types."
+      ],
+      "verification": "Extract JSON-LD from each template and confirm every content entity points at the Organization @id.",
+      "is_defect": false
+    },
+    {
+      "id": "R-004",
+      "title": "Treat the feed and sitemap lastmod as a maintained freshness channel",
+      "category": "freshness",
+      "gate": "G3",
+      "generator": "profile_playbook",
+      "rationale": "The site is profiled as a publisher.",
+      "mechanism": "A reliable feed plus honest per-document lastmod lets consumers discover new and updated articles without re-crawling, while they are still timely.",
+      "expected_effect": "",
+      "priority": "low",
+      "effort": "low",
+      "owner_role": "Content ops",
+      "implementation": [
+        "Include full dates and substantive summaries in the feed.",
+        "Emit lastmod only on substantive edits, from content timestamps."
+      ],
+      "verification": "Edit one article and confirm its lastmod and feed entry update while untouched articles do not.",
+      "is_defect": false
+    }
+  ],
+  "observations": [
+    {
+      "check_id": "G0.ROBOTS.TRAINING_AGENT_BLOCKED",
+      "confidence": "high",
+      "detail": "robots.txt line 288 (`Disallow: /`) disallows Applebot-Extended (Apple: ai training opt-out control). This does **not** affect whether the site can be cited in a live answer, because citation depends on the retrieval crawlers, not the training ones. Recorded so the distinction is explicit: if the intention was to stay out of training data while remaining citable, this rule is correct and should be kept.",
+      "detected_by": "access-policy-audit",
+      "evidence_refs": [],
+      "gate": "G0",
+      "title": "robots.txt blocks Applebot-Extended, a training-corpus crawler"
+    },
+    {
+      "check_id": "G0.ROBOTS.TRAINING_AGENT_BLOCKED",
+      "confidence": "high",
+      "detail": "robots.txt line 288 (`Disallow: /`) disallows CCBot (Common Crawl: open web snapshots widely used as model-training corpora). This does **not** affect whether the site can be cited in a live answer, because citation depends on the retrieval crawlers, not the training ones. Recorded so the distinction is explicit: if the intention was to stay out of training data while remaining citable, this rule is correct and should be kept.",
+      "detected_by": "access-policy-audit",
+      "evidence_refs": [],
+      "gate": "G0",
+      "title": "robots.txt blocks CCBot, a training-corpus crawler"
+    },
+    {
+      "check_id": "G0.ROBOTS.TRAINING_AGENT_BLOCKED",
+      "confidence": "high",
+      "detail": "robots.txt line 288 (`Disallow: /`) disallows ClaudeBot (Anthropic: model training corpus). This does **not** affect whether the site can be cited in a live answer, because citation depends on the retrieval crawlers, not the training ones. Recorded so the distinction is explicit: if the intention was to stay out of training data while remaining citable, this rule is correct and should be kept.",
+      "detected_by": "access-policy-audit",
+      "evidence_refs": [],
+      "gate": "G0",
+      "title": "robots.txt blocks ClaudeBot, a training-corpus crawler"
+    },
+    {
+      "check_id": "G0.ROBOTS.TRAINING_AGENT_BLOCKED",
+      "confidence": "high",
+      "detail": "robots.txt line 288 (`Disallow: /`) disallows GPTBot (OpenAI: model training corpus). This does **not** affect whether the site can be cited in a live answer, because citation depends on the retrieval crawlers, not the training ones. Recorded so the distinction is explicit: if the intention was to stay out of training data while remaining citable, this rule is correct and should be kept.",
+      "detected_by": "access-policy-audit",
+      "evidence_refs": [],
+      "gate": "G0",
+      "title": "robots.txt blocks GPTBot, a training-corpus crawler"
+    }
+  ],
+  "site_profile": {
+    "detected_type": "publisher",
+    "confidence": "high",
+    "signals": [
+      "Article markup on 12 page(s)",
+      "path classes present: /news",
+      "page text contains: 'by ', 'editor'",
+      "author byline on 5 page(s)"
+    ],
+    "scores": {
+      "docs_knowledge": 2.5,
+      "ecommerce": 4.0,
+      "local_business": 0.0,
+      "marketing_brochure": 9.0,
+      "marketplace_directory": 6.0,
+      "publisher": 19.5,
+      "saas_software": 4.5
+    },
+    "runner_up": "marketing_brochure",
+    "margin": 0.538,
+    "expected_schema_types": [
+      "Article",
+      "BlogPosting",
+      "NewsArticle",
+      "Organization",
+      "WebSite"
+    ],
+    "primary_fact_classes": [
+      "date"
+    ],
+    "checks_not_applicable": [],
+    "method": "scored from on-page evidence only: structured-data types, path classes, page text patterns and interaction controls. The domain name is never used."
+  },
+  "coverage": {
+    "pages_attempted": 33,
+    "pages_fetched": 30,
+    "pages_rendered": 0,
+    "render_mode": "static",
+    "render_note": "playwright is not installed; the render tier was skipped and client-side rendering was assessed from hydration payloads (tiers 1-2) instead",
+    "template_clusters": 10,
+    "robots_respected": true,
+    "crawl_delay_seconds": {},
+    "paths_skipped": [
+      {
+        "path": "/wp-content/themes/cnet-theme/build/features/breadcrumbs/frontend.css",
+        "reason": "refused as a possible state-changing request: query parameter 'ver' carries a high-entropy opaque token, the signature of a single-use action link"
+      },
+      {
+        "path": "/wp-content/themes/cnet-theme/build/features/faq/frontend.css",
+        "reason": "refused as a possible state-changing request: query parameter 'ver' carries a high-entropy opaque token, the signature of a single-use action link"
+      },
+      {
+        "path": "/wp-content/themes/cnet-theme/build/frontend.css",
+        "reason": "refused as a possible state-changing request: query parameter 'ver' carries a high-entropy opaque token, the signature of a single-use action link"
+      },
+      {
+        "path": "/wp-content/themes/ziff-davis-theme/build/features/exco/frontend.css",
+        "reason": "refused as a possible state-changing request: query parameter 'ver' carries a high-entropy opaque token, the signature of a single-use action link"
+      },
+      {
+        "path": "/wp-content/themes/ziff-davis-theme/build/frontend.css",
+        "reason": "refused as a possible state-changing request: query parameter 'ver' carries a high-entropy opaque token, the signature of a single-use action link"
+      }
+    ],
+    "checks_skipped": [
+      {
+        "check_id": "G0.GATING.BOT_STATUS_DIVERGENCE",
+        "reason": "no user-agent divergence probes are recorded in the ledger",
+        "remedy": "run the orchestrator, which issues a small fixed probe set"
+      },
+      {
+        "check_id": "G1.RENDER.CSR_CONTENT_GAP",
+        "reason": "tier 3 (direct browser measurement) did not run, so the render gap was assessed from structural signals and hydration payloads only (tiers 1-2). Tier 2 still yields high confidence where a framework payload is present.",
+        "remedy": "install Playwright and run `playwright install chromium` to enable direct render measurement"
+      },
+      {
+        "check_id": "G2.SD.SD_ONLY_IN_RENDERED_DOM",
+        "reason": "no rendered DOM is available, so markup injected by JavaScript cannot be distinguished from markup that is absent",
+        "remedy": "install Playwright to enable the render tier"
+      },
+      {
+        "check_id": "G3.FRESH.UPDATED_WITHOUT_CHANGE",
+        "reason": "no prior ledger was supplied, so dateModified cannot be compared across runs",
+        "remedy": "run the orchestrator with --prior-ledger <previous run's ledger>"
+      }
+    ],
+    "skills_failed": [],
+    "findings_rejected": [],
+    "budget": {
+      "requests_made": 75,
+      "wall_clock_seconds": 51.8,
+      "wall_clock_budget_seconds": 240.0,
+      "request_cap": 120,
+      "pages_fetched": 30,
+      "page_cap": 30,
+      "pages_rendered": 0,
+      "budget_exhausted": false,
+      "degradations": []
+    },
+    "offsite_corroboration": "no_identifiers_declared",
+    "mode": "live"
+  },
+  "methodology": {
+    "marketplace_version": "1.0.0",
+    "gate_model": "G0 Reach -> G1 Read -> G2 Interpret -> G3 Cite; GE Engage evaluated in parallel and never masked by G0-G3",
+    "severity_model": {
+      "formula": "gate_weight x scope_weight x fact_weight x confidence_multiplier",
+      "gate_weights": {
+        "G0": 1.0,
+        "G1": 0.95,
+        "G2": 0.7,
+        "G3": 0.55,
+        "GE": 0.65
+      },
+      "scope_weights": {
+        "site": 1.0,
+        "template": 0.8,
+        "section": 0.55,
+        "page": 0.3
+      },
+      "fact_weights": {
+        "primary": 1.0,
+        "secondary": 0.65,
+        "enrichment": 0.35
+      },
+      "confidence_multipliers": {
+        "high": 1.0,
+        "medium": 0.75,
+        "low": 0.45
+      },
+      "thresholds": {
+        "critical": 0.7,
+        "high": 0.46,
+        "medium": 0.25,
+        "low": 0.12
+      },
+      "effort_weights": {
+        "trivial": 0.5,
+        "low": 1.0,
+        "medium": 2.0,
+        "high": 4.0
+      },
+      "floors": [
+        "low confidence can never produce critical",
+        "single-page scope can never produce critical",
+        "a masked finding is capped one rank below its masker",
+        "blocking engagement failures take primary fact weight"
+      ],
+      "priority": "impact(score) x confidence / effort_weight, dependency-aware"
+    },
+    "skills_run": [
+      "access-policy-audit",
+      "render-extraction-audit",
+      "structured-data-audit",
+      "entity-trust-audit",
+      "answerability-audit",
+      "engagement-audit"
+    ],
+    "determinism": "Byte-identical output for identical input except audited_at (override with --now).",
+    "evidence_policy": "Every finding is constructed by a script through the Finding contract, cites evidence_refs into the evidence ledger, and is re-resolved by verify_report.py before the report is written.",
+    "safety": {
+      "methods": [
+        "GET",
+        "HEAD"
+      ],
+      "robots_txt": "respected for this audit's own fetching; never fetched a disallowed path",
+      "mutating_get_denylist": {
+        "path_segments": [
+          "accept-invite",
+          "activate",
+          "activation",
+          "add-to-cart",
+          "addtocart",
+          "admin",
+          "adminer.php",
+          "administrator",
+          "approve",
+          "backup",
+          "basket",
+          "cancel",
+          "cart",
+          "checkout",
+          "clear",
+          "confirm",
+          "confirmation",
+          "delete",
+          "destroy",
+          "download-all",
+          "dump",
+          "export",
+          "install",
+          "installer",
+          "log-off",
+          "log-out",
+          "logoff",
+          "logout",
+          "opt-out",
+          "optout",
+          "order-complete",
+          "pay",
+          "payment",
+          "phpmyadmin",
+          "purge",
+          "redeem",
+          "remove",
+          "reset",
+          "reset-password",
+          "resubscribe",
+          "revoke",
+          "setup",
+          "sign-out",
+          "signout",
+          "unfollow",
+          "unsubscribe",
+          "verification",
+          "verify",
+          "wp-admin",
+          "wp-login.php",
+          "xmlrpc.php"
+        ],
+        "query_keys": [
+          "_wpnonce",
+          "access_token",
+          "activation_key",
+          "add-to-cart",
+          "add_to_cart",
+          "api_key",
+          "apikey",
+          "auth",
+          "auth_token",
+          "authkey",
+          "code",
+          "confirm",
+          "confirmation_token",
+          "id_token",
+          "invitation_token",
+          "invite",
+          "jsessionid",
+          "magic",
+          "magic_link",
+          "nonce",
+          "otp",
+          "phpsessid",
+          "remove-item",
+          "remove_item",
+          "removed_item",
+          "reset_key",
+          "session",
+          "sessionid",
+          "sid",
+          "sig",
+          "signature",
+          "token",
+          "unsubscribe_token"
+        ],
+        "query_actions": [
+          "action=activate",
+          "action=add",
+          "action=approve",
+          "action=cancel",
+          "action=clear",
+          "action=confirm",
+          "action=delete",
+          "action=destroy",
+          "action=edit",
+          "action=empty",
+          "action=logout",
+          "action=purge",
+          "action=remove",
+          "action=reset",
+          "action=revoke",
+          "action=save",
+          "action=signout",
+          "action=submit",
+          "action=unsubscribe",
+          "action=update",
+          "cmd=cancel",
+          "cmd=confirm",
+          "cmd=delete",
+          "cmd=logout",
+          "cmd=remove",
+          "cmd=reset",
+          "do=cancel",
+          "do=confirm",
+          "do=delete",
+          "do=logout",
+          "do=remove",
+          "do=reset",
+          "mode=confirm",
+          "mode=delete",
+          "mode=logout",
+          "mode=remove",
+          "op=cancel",
+          "op=confirm",
+          "op=delete",
+          "op=logout",
+          "op=remove",
+          "op=reset"
+        ],
+        "opaque_token_rule": "length >= 20 and Shannon entropy >= 3.5 bits/char"
+      },
+      "ssrf_policy": [
+        "deny 0.0.0.0/8 (this host, unspecified)",
+        "deny 10.0.0.0/8 (RFC 1918 private)",
+        "deny 100.64.0.0/10 (RFC 6598 carrier-grade NAT)",
+        "deny 127.0.0.0/8 (loopback)",
+        "deny 169.254.0.0/16 (link-local, incl. cloud instance metadata at 169.254.169.254)",
+        "deny 172.16.0.0/12 (RFC 1918 private)",
+        "deny 192.0.0.0/24 (IETF protocol assignments)",
+        "deny 192.0.2.0/24 (TEST-NET-1 documentation)",
+        "deny 192.88.99.0/24 (6to4 relay anycast, deprecated)",
+        "deny 192.168.0.0/16 (RFC 1918 private)",
+        "deny 198.18.0.0/15 (benchmarking)",
+        "deny 198.51.100.0/24 (TEST-NET-2 documentation)",
+        "deny 203.0.113.0/24 (TEST-NET-3 documentation)",
+        "deny 224.0.0.0/4 (multicast)",
+        "deny 240.0.0.0/4 (reserved)",
+        "deny 255.255.255.255/32 (broadcast)",
+        "deny ::/128 (unspecified)",
+        "deny ::1/128 (loopback)",
+        "deny ::ffff:0:0/96 (IPv4-mapped -- validated separately as IPv4)",
+        "deny 64:ff9b::/96 (NAT64 well-known prefix)",
+        "deny 100::/64 (discard-only)",
+        "deny 2001:2::/48 (benchmarking)",
+        "deny 2001:db8::/32 (documentation)",
+        "deny fc00::/7 (unique local addresses)",
+        "deny fe80::/10 (link-local)",
+        "deny ff00::/8 (multicast)",
+        "resolve-then-connect: the validated address is pinned for the connection",
+        "fail closed: a host is refused if any of its addresses is disallowed",
+        "every redirect hop is re-validated before it is followed"
+      ],
+      "redaction": {
+        "snippet_limit_chars": 300,
+        "personal_data_masked": [
+          "email addresses",
+          "phone numbers",
+          "payment card numbers (Luhn-verified)",
+          "IBANs",
+          "national identifiers",
+          "IPv4 addresses"
+        ],
+        "secret_patterns_scanned": [
+          "aws-access-key",
+          "github-token",
+          "slack-token",
+          "stripe-key",
+          "google-api-key",
+          "openai-key",
+          "anthropic-key",
+          "private-key-block",
+          "jwt",
+          "bearer-header",
+          "basic-auth-url",
+          "generic-secret-assignment"
+        ],
+        "exception": "business contact details are preserved only in findings where the contact detail is itself the subject of the finding",
+        "pre_emit_gate": "the rendered report and run log are scanned independently for secret patterns before they are written"
+      },
+      "render_tier": {
+        "tier": "optional (tier 3 of 3)",
+        "required": false,
+        "fallback": "tiers 1-2 detect client-side rendering from structural signals and hydration payloads, with no browser",
+        "read_only_controls": [
+          "all non-GET requests aborted by request interception",
+          "no clicks, typing, form submission or any other interaction",
+          "service workers blocked",
+          "downloads and permissions disabled",
+          "third-party hosts aborted",
+          "per-page wall-clock cap and a run-level page cap"
+        ]
+      },
+      "identity": "truthful, contactable user-agent; no impersonation, no challenge solving, no evasion"
+    },
+    "limitations": [
+      "The audit samples pages; it is not exhaustive. Template clustering is what lets a sampled defect be attributed to every page on the same template, and each finding states its k/n sample.",
+      "Rendering is static-first. Client-side rendering is detected from structural signals and hydration payloads without a browser; direct browser measurement runs only when Playwright is installed, and the report states which mode was used.",
+      "Corroboration is measured as the surface the site offers for corroboration, plus resolution of declared identifiers. It is not a web-wide measurement of what other sources say about the brand.",
+      "Answerability and readability checks are content-form heuristics with published thresholds and vocabulary. They are English-only; pages in other languages are skipped rather than judged with the wrong word list.",
+      "'Above the fold' is a document-order proxy, and overlay and contrast checks read statically declared CSS only. There is no layout engine.",
+      "User-agent differentiation is detected only where it is implemented as a user-agent rule. IP-allowlist or verified-crawler gating cannot be observed without impersonation, which this audit never does.",
+      "Nothing here measures any assistant's actual answers. The checks encode the mechanisms by which content is found, read, interpreted and quoted."
+    ]
+  }
+}

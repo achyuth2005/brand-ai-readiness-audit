@@ -1,0 +1,15 @@
+.git
+.github
+.gitignore
+.dockerignore
+Dockerfile
+**/__pycache__
+**/*.pyc
+**/.DS_Store
+.venv
+venv
+*.egg-info
+audit-output
+out
+sample-output
+evaluation
